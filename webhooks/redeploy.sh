@@ -1,5 +1,5 @@
 #!/bin/bash
-git pull -f origin master   #(OR git pull --ff-only)
-npm install                #(OR yarn install)
-pm2 reload all
-pm2 save
+sudo git pull -f origin main   #(OR git pull --ff-only)
+sudo npm install                #(OR yarn install)
+sudo pm2 reload all
+sudo pm2 save
