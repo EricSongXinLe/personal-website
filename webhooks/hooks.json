@@ -1,7 +1,7 @@
 [
     {
       "id": "redeploy-app",
-      "execute-command": "/var/www/html/personal-website/webhooks/redeploy.sh",
+      "execute-command": "/webhooks/redeploy.sh",
       "command-working-directory": "/var/www/html/personal-website",
       "response-message": "Deployed...",
       "trigger-rule": {
