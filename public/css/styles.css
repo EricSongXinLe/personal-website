@@ -1,7 +1,22 @@
-.links {
+.container {
     display: flex;
+    flex-direction: column;
     align-items: center;
   }
+.links {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+.headshot{
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-top: 30px;
+    margin-bottom: 40px;
+}
+
 a {
 display:block;
 margin-right: 10px;
