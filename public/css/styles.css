@@ -1,0 +1,27 @@
+.links {
+    display: flex;
+    align-items: center;
+  }
+a {
+display:block;
+margin-right: 10px;
+}
+body {
+    height: 100vh;
+    --primary-color: #aaf6fe;
+    --secondary-color: #9baaf4;
+    background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+    background-size: 200% 200%;
+    animation: moveGradient 5s ease infinite;
+}
+@keyframes moveGradient {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
