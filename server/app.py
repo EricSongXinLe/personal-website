@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 app = Flask(__name__)
 @app.route('/')
 def index():
-    return 'This is the home page'
+    return render_template('./public/index.html')
 @app.route('/submit', methods=['POST'])
 def submit_data():
     data = request.get_json()
