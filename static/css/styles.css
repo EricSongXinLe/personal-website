@@ -23,8 +23,8 @@ margin-right: 10px;
 }
 body {
     height: 100vh;
-    --primary-color: #aafee1;
-    --secondary-color: #9baaf4;
+    --primary-color: #aafed3;
+    --secondary-color: #b09bf4;
     background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
     background-size: 200% 200%;
     animation: moveGradient 5s ease infinite;
