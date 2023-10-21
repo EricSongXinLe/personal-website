@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 @app.route('/')
 def index():
-    return render_template('./public/index.html')
+    return 'This is the home page'
 @app.route('/submit', methods=['POST'])
 def submit_data():
     data = request.get_json()
