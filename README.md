@@ -1,2 +1,2 @@
 # Eric's Personal Website.
-This is my personal website git repo.
+Visit my website [here](https://ericsong.cn)!
