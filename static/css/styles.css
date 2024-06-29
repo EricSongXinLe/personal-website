@@ -17,6 +17,12 @@
     margin-bottom: 40px;
     box-shadow: 3px 3px 5px rgb(138, 138, 138);
 }
+.linkImage{
+    transition: transform 0.22s;
+}
+.linkImage:hover {
+    transform: scale(1.15);
+}
 
 a {
 display:block;
