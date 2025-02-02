@@ -4,9 +4,12 @@
   "private": true,
   "dependencies": {
     "cra-template": "1.2.0",
+    "i18next": "^24.2.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-i18next": "^15.4.0",
     "react-scripts": "5.0.1",
+    "typescript": "^5.7.3",
     "web-vitals": "^4.2.4"
   },
   "scripts": {
