@@ -47,7 +47,7 @@ function App() {
         height="250"
       />
       <div className="links">
-        <a href="/Resume.pdf">
+        <a href={t('resumeLinkAlt')}>
           <img className="linkImage" src="./images/icon_cv.png" alt={t('cvAlt')} width="50" height="50" />
         </a>
         <a href="https://www.linkedin.com/in/xinle-song/">

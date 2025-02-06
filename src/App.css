@@ -16,11 +16,14 @@ body {
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  max-width: 600px;
-  width: 100%;
+  width: 90%; /* 设置宽度为 90% */
+  max-width: 600px; /* 最大宽度 */
+  min-width: 300px; /* 最小宽度 */
   text-align: center;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 20px;
+  box-sizing: border-box; /* 确保 padding 不会影响宽度 */
 }
 
 h1 {
@@ -28,6 +31,9 @@ h1 {
   font-weight: 700;
   color: #2c3e50;
   margin-bottom: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; 
 }
 
 h3 {
@@ -37,15 +43,14 @@ h3 {
   margin-bottom: 1rem;
 }
 
-/* 段落样式 */
 p {
   font-size: 1.1rem;
   line-height: 1.6;
   color: #4a5568;
   margin-bottom: 2rem;
+  word-wrap: break-word;
 }
 
-/* 头像样式 */
 .headshot {
   width: 150px;
   height: 150px;
@@ -61,7 +66,6 @@ p {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
-/* 链接图标样式 */
 .links {
   display: flex;
   justify-content: center;
@@ -81,7 +85,6 @@ p {
   opacity: 1;
 }
 
-/* 水平分割线样式 */
 hr {
   border: 0;
   height: 1px;
@@ -89,7 +92,6 @@ hr {
   margin: 2rem 0;
 }
 
-/* 背景动画 */
 @keyframes moveGradient {
   0% {
     background-position: 0% 50%;
@@ -102,7 +104,6 @@ hr {
   }
 }
 
-/* 响应式设计 */
 @media (max-width: 768px) {
   .container {
     padding: 1.5rem;
@@ -129,7 +130,9 @@ hr {
     width: 35px;
     height: 35px;
   }
-}.language-selector {
+}
+
+.language-selector {
   position: absolute;
   top: 10px;
   right: 20px;
@@ -146,12 +149,13 @@ hr {
   color: #333;
   font-size: 14px;
   text-align: center;
+  white-space: nowrap;
+  min-width: 70px;
 }
 
 .language-button:hover {
   background-color: #e9e9e9;
 }
-
 
 .dropdown {
   position: absolute;
@@ -168,6 +172,7 @@ hr {
   transform: translateY(-10px);
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
+  min-width: 70px; 
 }
 
 .dropdown.visible {
@@ -184,6 +189,7 @@ hr {
   width: 100%;
   cursor: pointer;
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .dropdown button:hover {
