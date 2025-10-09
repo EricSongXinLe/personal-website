@@ -1,11 +1,48 @@
 {
-    "title": "嗨，我是 Eric!",
-    "aboutMe": "关于我",
-    "description": "我是 UCLA 的计算机工程专业大三学生，也是一名摄影爱好者！",
-    "cvAlt": "简历",
-    "linkedinAlt": "领英",
-    "githubAlt": "GitHub",
-    "flickrAlt": "Flickr",
-    "emailAlt": "邮箱",
-    "resumeLinkAlt": "Resume-CN.pdf"
-  }  
+  "badge": "UCLA 计算机工程",
+  "title": "嗨，我是 Eric Song",
+  "tagline": "打造可靠的系统，也用镜头记录生活。",
+  "introduction": "我是 UCLA 计算机工程专业的大三学生，同时也是摄影爱好者，喜欢通过贴近人的技术帮助大家。我热衷于构建沉浸式的数字体验，并用镜头记录身边的世界。",
+  "actions": {
+    "resume": "查看简历",
+    "contact": "保持联系"
+  },
+  "resumeLink": "Resume-CN.pdf",
+  "skillsHeading": "关注领域",
+  "skills": [
+    "全栈网页体验",
+    "嵌入式硬件原型",
+    "以用户为中心的产品设计",
+    "人像与街拍摄影"
+  ],
+  "aboutHeading": "关于我",
+  "aboutBody": "从课堂合作项目到洛杉矶的自由摄影，我在工程严谨与艺术好奇之间寻找平衡。我热爱架构可靠的系统、尝试新的拍摄手法，并与社区分享知识。",
+  "highlightsHeading": "最近的重点",
+  "highlights": [
+    {
+      "icon": "🚀",
+      "title": "动手做工程",
+      "description": "设计嵌入式解决方案，尝试将软件与硬件连接的物联网项目。"
+    },
+    {
+      "icon": "🎨",
+      "title": "视觉故事",
+      "description": "策划展现人物与城市的照片集，将色彩理论与灯光技巧结合。"
+    },
+    {
+      "icon": "🤝",
+      "title": "协作成长",
+      "description": "打造包容的团队、指导同伴，并交付让技术更易于接近的项目。"
+    }
+  ],
+  "contactHeading": "一起合作吧",
+  "contactBody": "目前我正在寻找实习、项目合作以及创意伙伴。如果你有有趣的想法，欢迎和我聊聊。",
+  "contactCta": "写信给我",
+  "cvAlt": "简历",
+  "linkedinAlt": "领英",
+  "githubAlt": "GitHub",
+  "flickrAlt": "Flickr",
+  "emailAlt": "邮箱",
+  "headshotAlt": "Eric Song 的照片",
+  "languageLabel": "语言"
+}
