@@ -1,48 +1,11 @@
 {
-  "badge": "Computer Engineering @ UCLA",
-  "title": "Hey, I'm Eric Song",
-  "tagline": "Designing resilient systems and capturing stories through photography.",
-  "introduction": "I'm a junior at UCLA studying Computer Engineering and a photography hobbyist exploring how thoughtful technology can empower people. I love building immersive digital experiences and documenting the world through my lens.",
-  "actions": {
-    "resume": "View Resume",
-    "contact": "Let's Connect"
-  },
-  "resumeLink": "Resume-EN.pdf",
-  "skillsHeading": "Focus Areas",
-  "skills": [
-    "Full-stack web experiences",
-    "Embedded hardware prototypes",
-    "Human-centered product design",
-    "Portrait & street photography"
-  ],
-  "aboutHeading": "About Me",
-  "aboutBody": "From collaborative classroom projects to freelance shoots around Los Angeles, I balance engineering rigor with artistic curiosity. I'm passionate about architecting reliable systems, experimenting with new camera techniques, and sharing knowledge with my community.",
-  "highlightsHeading": "What I'm Working On",
-  "highlights": [
-    {
-      "icon": "🚀",
-      "title": "Hands-on Engineering",
-      "description": "Designing embedded solutions and experimenting with IoT systems that bridge software with hardware."
-    },
-    {
-      "icon": "🎨",
-      "title": "Visual Storytelling",
-      "description": "Curating photo collections that celebrate people and places, blending color theory with technical lighting."
-    },
-    {
-      "icon": "🤝",
-      "title": "Collaborative Growth",
-      "description": "Building inclusive teams, mentoring peers, and shipping projects that make technology approachable."
-    }
-  ],
-  "contactHeading": "Let's Collaborate",
-  "contactBody": "I'm currently seeking internships, project partnerships, and creative collaborations. If you're exploring something exciting, I'd love to hear more.",
-  "contactCta": "Email Me",
-  "cvAlt": "Resume",
+  "title": "Hey, this is Eric!",
+  "aboutMe": "About Me",
+  "description": "I'm a junior at UCLA studying Computer Engineering, and a photography hobbyist!",
+  "cvAlt": "CV",
   "linkedinAlt": "LinkedIn",
   "githubAlt": "GitHub",
   "flickrAlt": "Flickr",
   "emailAlt": "Email",
-  "headshotAlt": "Portrait of Eric Song",
-  "languageLabel": "Language"
+  "resumeLinkAlt": "Resume-EN.pdf"
 }
