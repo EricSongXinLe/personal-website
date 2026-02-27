@@ -1,7 +1,10 @@
 {
   "title": "Hey, this is Eric!",
+  "subtitle": "Computer Engineering Student at UCLA",
+  "aboutLabel": "Profile",
   "aboutMe": "About Me",
   "description": "I'm a junior at UCLA studying Computer Engineering, and a photography hobbyist!",
+  "linksTitle": "Connect",
   "languageLabel": "Language",
   "headshotAlt": "Eric portrait",
   "linksLabel": "Contact and profile links",

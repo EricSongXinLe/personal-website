@@ -1,7 +1,10 @@
 {
   "title": "嗨，我是 Eric!",
+  "subtitle": "UCLA 计算机工程专业学生",
+  "aboutLabel": "个人简介",
   "aboutMe": "关于我",
   "description": "我是 UCLA 的计算机工程专业大三学生，也是一名摄影爱好者！",
+  "linksTitle": "联系我",
   "languageLabel": "语言",
   "headshotAlt": "Eric 头像",
   "linksLabel": "联系方式与主页链接",

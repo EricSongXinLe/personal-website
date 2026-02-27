@@ -30,11 +30,15 @@ test('renders the main profile content', () => {
   });
 
   const heading = container.querySelector('h1');
-  const aboutSection = container.querySelector('h2');
-  const githubLink = container.querySelector('a[href="https://github.com/EricSongXinLe/"]');
+  const aboutSection = Array.from(container.querySelectorAll('h2')).find(
+    (node) => node.textContent === 'About Me'
+  );
+  const githubLink = container.querySelector('.link-pill[href="https://github.com/EricSongXinLe/"]');
+  const subtitle = container.querySelector('.subtitle');
 
   expect(heading && heading.textContent).toMatch(/hey, this is eric!/i);
-  expect(aboutSection && aboutSection.textContent).toMatch(/about me/i);
+  expect(subtitle && subtitle.textContent).toMatch(/computer engineering student at ucla/i);
+  expect(aboutSection).toBeTruthy();
   expect(githubLink).toBeTruthy();
 });
 
@@ -50,12 +54,14 @@ test('changes language through the language menu', () => {
   });
 
   const languageOptions = Array.from(container.querySelectorAll('.dropdown button'));
-  const chineseOption = languageOptions.find((button) => button.textContent === '中文');
+  const chineseOption = languageOptions.find((button) => button.textContent.includes('中文'));
   expect(chineseOption).toBeTruthy();
   act(() => {
     chineseOption.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
 
   const chineseHeading = container.querySelector('h1');
+  const chineseSubtitle = container.querySelector('.subtitle');
   expect(chineseHeading && chineseHeading.textContent).toMatch(/嗨，我是 Eric!/);
+  expect(chineseSubtitle && chineseSubtitle.textContent).toMatch(/UCLA 计算机工程专业学生/);
 });
