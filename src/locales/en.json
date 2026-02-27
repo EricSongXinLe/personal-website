@@ -1,12 +1,14 @@
 {
-    "title": "Hey, this is Eric!",
-    "aboutMe": "About Me",
-    "description": "I'm a junior at UCLA studying Computer Engineering, and a photography hobbyist!",
-    "cvAlt": "CV",
-    "linkedinAlt": "LinkedIn",
-    "githubAlt": "GitHub",
-    "flickrAlt": "Flickr",
-    "emailAlt": "Email",
-    "resumeLinkAlt": "Resume-EN.pdf"
-  }
-  
+  "title": "Hey, this is Eric!",
+  "aboutMe": "About Me",
+  "description": "I'm a junior at UCLA studying Computer Engineering, and a photography hobbyist!",
+  "languageLabel": "Language",
+  "headshotAlt": "Eric portrait",
+  "linksLabel": "Contact and profile links",
+  "cvAlt": "CV",
+  "linkedinAlt": "LinkedIn",
+  "githubAlt": "GitHub",
+  "flickrAlt": "Flickr",
+  "emailAlt": "Email",
+  "resumeLinkAlt": "Resume-EN.pdf"
+}

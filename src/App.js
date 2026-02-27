@@ -1,66 +1,195 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { useTranslation } from 'react-i18next';
-import './i18n'; 
+import './i18n';
 
 function App() {
   const { t, i18n } = useTranslation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  let timer; 
+  const dropdownRef = useRef(null);
+  const closeTimerRef = useRef(null);
+
+  useEffect(() => {
+    const savedLanguage = window.localStorage.getItem('preferredLanguage');
+    if (savedLanguage === 'en' || savedLanguage === 'zh') {
+      i18n.changeLanguage(savedLanguage);
+    }
+  }, [i18n]);
+
+  useEffect(() => {
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+
+  useEffect(() => {
+    const handleDocumentMouseDown = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleDocumentMouseDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentMouseDown);
+      document.removeEventListener('keydown', handleEscape);
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleMouseEnter = () => {
-    clearTimeout(timer); 
-    setIsDropdownOpen(true); 
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setIsDropdownOpen(true);
   };
 
   const handleMouseLeave = () => {
-    timer = setTimeout(() => setIsDropdownOpen(false), 100); 
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+    }
+    closeTimerRef.current = setTimeout(() => setIsDropdownOpen(false), 120);
   };
 
   const changeLanguage = (lng) => {
-    i18n.changeLanguage(lng); 
+    i18n.changeLanguage(lng);
+    window.localStorage.setItem('preferredLanguage', lng);
     setIsDropdownOpen(false);
   };
+
+  const language = i18n.resolvedLanguage || i18n.language;
+  const isEnglishSelected = language.startsWith('en');
+  const isChineseSelected = language.startsWith('zh');
+  const assetBase = process.env.PUBLIC_URL || '';
 
   return (
     <div className="container">
       <div
         className="language-selector"
+        ref={dropdownRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <div className="language-button">🌐 Language</div>
-        <div className={`dropdown ${isDropdownOpen ? 'visible' : ''}`}>
-          <button onClick={() => changeLanguage('en')}>English</button>
-          <button onClick={() => changeLanguage('zh')}>中文</button>
+        <button
+          type="button"
+          className="language-button"
+          onClick={() => setIsDropdownOpen((open) => !open)}
+          aria-haspopup="true"
+          aria-expanded={isDropdownOpen}
+          aria-label={t('languageLabel')}
+        >
+          <span aria-hidden="true">🌐</span>
+          <span>{t('languageLabel')}</span>
+        </button>
+        <div
+          className={`dropdown ${isDropdownOpen ? 'visible' : ''}`}
+          role="menu"
+          aria-label={t('languageLabel')}
+        >
+          <button
+            type="button"
+            role="menuitemradio"
+            aria-checked={isEnglishSelected}
+            onClick={() => changeLanguage('en')}
+          >
+            English
+          </button>
+          <button
+            type="button"
+            role="menuitemradio"
+            aria-checked={isChineseSelected}
+            onClick={() => changeLanguage('zh')}
+          >
+            中文
+          </button>
         </div>
       </div>
-      <h1 className="font-italic">{t('title')}</h1>
+      <h1>{t('title')}</h1>
       <hr />
-      <h3>{t('aboutMe')}</h3>
+      <h2>{t('aboutMe')}</h2>
       <p>{t('description')}</p>
       <img
         className="headshot"
-        src="./images/headshot.jpg"
-        alt="Eric"
+        src={`${assetBase}/images/headshot.jpg`}
+        alt={t('headshotAlt')}
         width="250"
         height="250"
+        loading="lazy"
       />
-      <div className="links">
-        <a href={t('resumeLinkAlt')}>
-          <img className="linkImage" src="./images/icon_cv.png" alt={t('cvAlt')} width="50" height="50" />
+      <div className="links" aria-label={t('linksLabel')}>
+        <a
+          href={`${assetBase}/${t('resumeLinkAlt')}`}
+          aria-label={t('cvAlt')}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            className="linkImage"
+            src={`${assetBase}/images/icon_cv.png`}
+            alt=""
+            width="50"
+            height="50"
+          />
         </a>
-        <a href="https://www.linkedin.com/in/xinle-song/">
-          <img className="linkImage" src="./images/icon_linkedin.png" alt={t('linkedinAlt')} width="50" height="50" />
+        <a
+          href="https://www.linkedin.com/in/xinle-song/"
+          aria-label={t('linkedinAlt')}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            className="linkImage"
+            src={`${assetBase}/images/icon_linkedin.png`}
+            alt=""
+            width="50"
+            height="50"
+          />
         </a>
-        <a href="https://github.com/EricSongXinLe/">
-          <img className="linkImage" src="./images/icon_github.png" alt={t('githubAlt')} width="50" height="50" />
+        <a
+          href="https://github.com/EricSongXinLe/"
+          aria-label={t('githubAlt')}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            className="linkImage"
+            src={`${assetBase}/images/icon_github.png`}
+            alt=""
+            width="50"
+            height="50"
+          />
         </a>
-        <a href="https://www.flickr.com/photos/196818188@N02/">
-          <img className="linkImage" src="./images/icon_camera.png" alt={t('flickrAlt')} width="50" height="50" />
+        <a
+          href="https://www.flickr.com/photos/196818188@N02/"
+          aria-label={t('flickrAlt')}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            className="linkImage"
+            src={`${assetBase}/images/icon_camera.png`}
+            alt=""
+            width="50"
+            height="50"
+          />
         </a>
-        <a href="mailto:erics311@ucla.edu">
-          <img className="linkImage" src="./images/icon_email.png" alt={t('emailAlt')} width="50" height="50" />
+        <a href="mailto:erics311@ucla.edu" aria-label={t('emailAlt')}>
+          <img
+            className="linkImage"
+            src={`${assetBase}/images/icon_email.png`}
+            alt=""
+            width="50"
+            height="50"
+          />
         </a>
       </div>
       <hr />

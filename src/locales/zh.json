@@ -1,11 +1,14 @@
 {
-    "title": "嗨，我是 Eric!",
-    "aboutMe": "关于我",
-    "description": "我是 UCLA 的计算机工程专业大三学生，也是一名摄影爱好者！",
-    "cvAlt": "简历",
-    "linkedinAlt": "领英",
-    "githubAlt": "GitHub",
-    "flickrAlt": "Flickr",
-    "emailAlt": "邮箱",
-    "resumeLinkAlt": "Resume-CN.pdf"
-  }  
+  "title": "嗨，我是 Eric!",
+  "aboutMe": "关于我",
+  "description": "我是 UCLA 的计算机工程专业大三学生，也是一名摄影爱好者！",
+  "languageLabel": "语言",
+  "headshotAlt": "Eric 头像",
+  "linksLabel": "联系方式与主页链接",
+  "cvAlt": "简历",
+  "linkedinAlt": "领英",
+  "githubAlt": "GitHub",
+  "flickrAlt": "Flickr",
+  "emailAlt": "邮箱",
+  "resumeLinkAlt": "Resume-CN.pdf"
+}
