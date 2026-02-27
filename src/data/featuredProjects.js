@@ -1,13 +1,13 @@
 export const featuredProjects = [
   {
     id: 'project-1',
-    name: 'Vortex GPGPU (bug_fixes)',
+    name: 'Vortex GPGPU',
     summary: {
       en: 'Contributed on Vortex, a full-stack open-source RISC-V GPGPU with SimX, RTL simulation, and FPGA backends. Current research focus: enabling tensor-core support on RISC-V GPU architecture.',
       zh: '在 Vortex GPGPU 模拟器上进行开发。Vortex 是一个全栈开源 RISC-V GPGPU，支持 C++ SimX仿真、RTL 仿真和 FPGA 后端。当前研究重点是探索在 RISC-V GPU 上支持 tensor core。',
     },
     tech: ['C++', 'RISC-V', 'GPU', 'RTL', 'FPGA'],
-    repoUrl: 'https://github.com/vortexgpgpu/vortex/tree/bug_fixes',
+    repoUrl: 'https://github.com/vortexgpgpu/vortex',
     demoUrl: '',
     featured: true,
   },
