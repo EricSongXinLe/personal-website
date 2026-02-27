@@ -2,6 +2,43 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Observability (Ops Monitoring)
+
+This repo includes baseline production observability for a static site:
+
+1. Build fingerprint:
+- `npm run build` now writes `build/version.json` with commit + UTC build time.
+
+2. Health check script:
+- `npm run healthcheck` checks:
+- home page returns `200`, HTML content, and optional title match
+- `/version.json` exists and has required fields
+
+3. Scheduled uptime monitor:
+- GitHub Actions workflow: `.github/workflows/uptime-monitor.yml`
+- Runs every 15 minutes + manual trigger
+- Opens an incident issue on failure, closes it automatically on recovery
+
+### Required GitHub Secrets
+
+Set these in your GitHub repo `Settings > Secrets and variables > Actions`:
+
+- `SITE_URL`: your production URL, e.g. `https://yourdomain.com`
+- `EXPECTED_TITLE` (optional): exact `<title>` content to verify
+
+### Local Run Examples
+
+```bash
+# build + write build/version.json
+npm run build
+
+# check production site manually
+SITE_URL=https://yourdomain.com npm run healthcheck
+
+# stricter check with expected title
+SITE_URL=https://yourdomain.com EXPECTED_TITLE="Eric Song | Personal Website" npm run healthcheck
+```
+
 ## Available Scripts
 
 In the project directory, you can run:
