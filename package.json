@@ -3,27 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "cra-template": "1.2.0",
     "i18next": "^24.2.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-i18next": "^15.4.0",
-    "react-scripts": "5.0.1",
-    "typescript": "^5.7.3",
-    "web-vitals": "^4.2.4"
+    "react-i18next": "^15.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "jsdom": "^26.0.0",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build && node scripts/write-build-version.js",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "dev": "vite",
+    "build": "vite build && node scripts/write-build-version.js",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "healthcheck": "node scripts/health-check.js"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [

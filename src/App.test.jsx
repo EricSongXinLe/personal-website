@@ -1,5 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { afterEach, beforeEach, expect, test } from 'vitest';
 import App from './App';
 import i18n from './i18n';
 

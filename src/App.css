@@ -111,6 +111,24 @@ hr {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  body {
+    animation: none;
+    background-size: 100% 100%;
+  }
+
+  .headshot,
+  .linkImage,
+  .dropdown {
+    transition: none;
+  }
+
+  .headshot:hover,
+  .linkImage:hover {
+    transform: none;
+  }
+}
+
 @media (max-width: 768px) {
   .container {
     padding: 1.5rem;

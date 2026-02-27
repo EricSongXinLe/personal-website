@@ -69,7 +69,8 @@ function App() {
   const language = i18n.resolvedLanguage || i18n.language;
   const isEnglishSelected = language.startsWith('en');
   const isChineseSelected = language.startsWith('zh');
-  const assetBase = process.env.PUBLIC_URL || '';
+  const baseUrl = import.meta.env.BASE_URL || '/';
+  const getAssetPath = (assetPath) => `${baseUrl}${assetPath}`;
 
   return (
     <div className="container">
@@ -117,24 +118,29 @@ function App() {
       <hr />
       <h2>{t('aboutMe')}</h2>
       <p>{t('description')}</p>
-      <img
-        className="headshot"
-        src={`${assetBase}/images/headshot.jpg`}
-        alt={t('headshotAlt')}
-        width="250"
-        height="250"
-        loading="lazy"
-      />
+      <picture>
+        <source srcSet={getAssetPath('images/headshot.webp')} type="image/webp" />
+        <img
+          className="headshot"
+          src={getAssetPath('images/headshot.jpg')}
+          alt={t('headshotAlt')}
+          width="250"
+          height="250"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+        />
+      </picture>
       <div className="links" aria-label={t('linksLabel')}>
         <a
-          href={`${assetBase}/${t('resumeLinkAlt')}`}
+          href={getAssetPath(t('resumeLinkAlt'))}
           aria-label={t('cvAlt')}
           target="_blank"
           rel="noopener noreferrer"
         >
           <img
             className="linkImage"
-            src={`${assetBase}/images/icon_cv.png`}
+            src={getAssetPath('images/icon_cv.png')}
             alt=""
             width="50"
             height="50"
@@ -148,7 +154,7 @@ function App() {
         >
           <img
             className="linkImage"
-            src={`${assetBase}/images/icon_linkedin.png`}
+            src={getAssetPath('images/icon_linkedin.png')}
             alt=""
             width="50"
             height="50"
@@ -162,7 +168,7 @@ function App() {
         >
           <img
             className="linkImage"
-            src={`${assetBase}/images/icon_github.png`}
+            src={getAssetPath('images/icon_github.png')}
             alt=""
             width="50"
             height="50"
@@ -176,7 +182,7 @@ function App() {
         >
           <img
             className="linkImage"
-            src={`${assetBase}/images/icon_camera.png`}
+            src={getAssetPath('images/icon_camera.png')}
             alt=""
             width="50"
             height="50"
@@ -185,7 +191,7 @@ function App() {
         <a href="mailto:erics311@ucla.edu" aria-label={t('emailAlt')}>
           <img
             className="linkImage"
-            src={`${assetBase}/images/icon_email.png`}
+            src={getAssetPath('images/icon_email.png')}
             alt=""
             width="50"
             height="50"
