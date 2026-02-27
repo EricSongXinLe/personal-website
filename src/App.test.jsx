@@ -35,11 +35,17 @@ test('renders the main profile content', () => {
   );
   const githubLink = container.querySelector('.link-pill[href="https://github.com/EricSongXinLe/"]');
   const subtitle = container.querySelector('.subtitle');
+  const projectsTitle = container.querySelector('#projects-title');
+  const projectCards = container.querySelectorAll('.project-card');
+  const projectRepoLink = container.querySelector('.project-actions a[href^="https://github.com/"]');
 
   expect(heading && heading.textContent).toMatch(/hey, this is eric!/i);
   expect(subtitle && subtitle.textContent).toMatch(/computer engineering student at ucla/i);
   expect(aboutSection).toBeTruthy();
   expect(githubLink).toBeTruthy();
+  expect(projectsTitle && projectsTitle.textContent).toMatch(/featured projects/i);
+  expect(projectCards.length).toBe(3);
+  expect(projectRepoLink).toBeTruthy();
 });
 
 test('changes language through the language menu', () => {
@@ -62,6 +68,10 @@ test('changes language through the language menu', () => {
 
   const chineseHeading = container.querySelector('h1');
   const chineseSubtitle = container.querySelector('.subtitle');
+  const chineseProjectsTitle = container.querySelector('#projects-title');
+  const chineseProjectSummary = container.querySelector('.project-card p');
   expect(chineseHeading && chineseHeading.textContent).toMatch(/嗨，我是 Eric!/);
   expect(chineseSubtitle && chineseSubtitle.textContent).toMatch(/UCLA 计算机工程专业学生/);
+  expect(chineseProjectsTitle && chineseProjectsTitle.textContent).toMatch(/精选项目/);
+  expect(chineseProjectSummary && chineseProjectSummary.textContent).toMatch(/RISC-V GPU/);
 });

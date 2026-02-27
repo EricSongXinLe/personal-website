@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { useTranslation } from 'react-i18next';
 import './i18n';
+import { featuredProjects } from './data/featuredProjects';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -72,6 +73,7 @@ function App() {
   const baseUrl = import.meta.env.BASE_URL || '/';
   const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   const getAssetPath = (assetPath) => `${normalizedBase}${assetPath.replace(/^\//, '')}`;
+  const currentLang = language.startsWith('zh') ? 'zh' : 'en';
 
   const profileLinks = [
     {
@@ -105,6 +107,8 @@ function App() {
       external: false,
     },
   ];
+
+  const projectsToShow = featuredProjects.filter((project) => project.featured).slice(0, 3);
 
   return (
     <div className="page-shell">
@@ -197,6 +201,38 @@ function App() {
                 <img className="linkImage" src={link.icon} alt="" width="40" height="40" />
                 <span className="linkText">{link.label}</span>
               </a>
+            ))}
+          </div>
+        </section>
+
+        <section className="projects-section" aria-labelledby="projects-title">
+          <div className="projects-header">
+            <h2 id="projects-title">{t('projectsTitle')}</h2>
+            <p className="projects-subtitle">{t('projectsSubtitle')}</p>
+          </div>
+          <div className="projects-grid">
+            {projectsToShow.map((project) => (
+              <article key={project.id} className="project-card">
+                <h3>{project.name}</h3>
+                <p>{project.summary[currentLang]}</p>
+                <ul className="project-tech-list" aria-label={`${project.name} tech stack`}>
+                  {project.tech.map((techItem) => (
+                    <li key={techItem}>{techItem}</li>
+                  ))}
+                </ul>
+                <div className="project-actions">
+                  <a href={project.repoUrl} target="_blank" rel="noopener noreferrer">
+                    {t('projectRepoLabel')}
+                  </a>
+                  {project.demoUrl ? (
+                    <a href={project.demoUrl} target="_blank" rel="noopener noreferrer">
+                      {t('projectDemoLabel')}
+                    </a>
+                  ) : (
+                    <span className="project-soon">{t('projectComingSoonLabel')}</span>
+                  )}
+                </div>
+              </article>
             ))}
           </div>
         </section>
