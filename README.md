@@ -18,6 +18,7 @@ This repo includes baseline production observability for a static site:
 - GitHub Actions workflow: `.github/workflows/uptime-monitor.yml`
 - Runs every 15 minutes + manual trigger
 - Opens an incident issue on failure, closes it automatically on recovery
+- Uses failure backoff: after repeated failures it skips some runs (15m -> 30m -> 1h -> 2h -> 4h -> 8h), then returns to normal after recovery
 
 ### Required GitHub Secrets
 
