@@ -10,6 +10,8 @@ let root;
 beforeEach(() => {
   window.localStorage.clear();
   i18n.changeLanguage('en');
+  window.location.hash = '#/';
+  window.scrollTo = () => {};
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -22,6 +24,7 @@ afterEach(() => {
   container.remove();
   container = null;
   root = null;
+  window.location.hash = '#/';
 });
 
 test('renders the main profile content', () => {
@@ -38,6 +41,7 @@ test('renders the main profile content', () => {
   const projectsTitle = container.querySelector('#projects-title');
   const projectCards = container.querySelectorAll('.project-card');
   const projectRepoLink = container.querySelector('.project-actions a[href^="https://github.com/"]');
+  const photographyNav = container.querySelector('.site-nav-link[href="/#/photography"]');
 
   expect(heading && heading.textContent).toMatch(/hey, this is eric!/i);
   expect(subtitle && subtitle.textContent).toMatch(/computer engineering student at ucla/i);
@@ -46,6 +50,7 @@ test('renders the main profile content', () => {
   expect(projectsTitle && projectsTitle.textContent).toMatch(/featured projects/i);
   expect(projectCards.length).toBe(3);
   expect(projectRepoLink).toBeTruthy();
+  expect(photographyNav && photographyNav.textContent).toMatch(/photography/i);
 });
 
 test('changes language through the language menu', () => {

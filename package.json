@@ -15,8 +15,9 @@
     "vitest": "^3.0.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && node scripts/write-build-version.js",
+    "generate:photos": "node scripts/generate-photos.js",
+    "dev": "npm run generate:photos && vite",
+    "build": "npm run generate:photos && vite build && node scripts/write-build-version.js",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

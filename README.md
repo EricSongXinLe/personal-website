@@ -11,6 +11,29 @@ npm run dev
 
 Open `http://localhost:5173`.
 
+## Photography Workflow
+
+The site can generate a local photography gallery with EXIF metadata at build time.
+
+1. Put source images in `photos/originals/`.
+2. Run:
+
+```bash
+npm run generate:photos
+```
+
+The generator will:
+
+- extract available EXIF metadata from JPEG/TIFF source files (best effort)
+- create display assets in `public/photos/generated/`
+- write the front-end data file to `src/data/photos.generated.json`
+
+Notes:
+
+- `photos/originals/` is gitignored so you can keep original files local.
+- If `photos/originals/` is missing, the generator keeps the last committed gallery output instead of clearing it.
+- On macOS, `sips` is used to create resized JPEG variants. On other systems, the script falls back to copying the original files when image transformation tools are unavailable.
+
 ## Build and Preview
 
 ```bash
