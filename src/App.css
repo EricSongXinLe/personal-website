@@ -460,20 +460,67 @@ p {
   white-space: nowrap;
 }
 
+.photography-gallery-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.photo-sort-controls {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem;
+  border: 1px solid rgba(84, 110, 141, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow-sm);
+}
+
+.photo-sort-button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.photo-sort-button:hover {
+  color: var(--text-strong);
+}
+
+.photo-sort-button.is-active {
+  background: var(--accent);
+  color: white;
+}
+
 .photography-grid {
-  column-count: 3;
-  column-gap: var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.photography-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  min-width: 0;
 }
 
 .photo-tile {
-  width: 100%;
+  flex: 0 0 auto;
   border: none;
   padding: 0;
-  margin: 0 0 var(--space-3);
+  margin: 0;
   background: transparent;
   border-radius: calc(var(--radius-md) - 2px);
   cursor: pointer;
-  break-inside: avoid;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   transform: translateY(0);
@@ -483,7 +530,7 @@ p {
 .photo-tile img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   background: var(--surface-contrast);
 }
 
@@ -744,10 +791,6 @@ p {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .photography-grid {
-    column-count: 2;
-  }
-
   .lightbox-panel {
     height: auto;
     grid-template-columns: 1fr;
@@ -831,8 +874,17 @@ p {
     grid-template-columns: 1fr;
   }
 
-  .photography-grid {
-    column-count: 1;
+  .photography-gallery-meta {
+    justify-content: space-between;
+  }
+
+  .photo-sort-controls {
+    width: 100%;
+  }
+
+  .photo-sort-button {
+    flex: 1;
+    text-align: center;
   }
 
   .link-pill {

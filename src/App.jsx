@@ -1,12 +1,18 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import { useTranslation } from 'react-i18next';
 import './i18n';
 import { featuredProjects } from './data/featuredProjects';
+import { buildJustifiedRows, getTargetRowHeight, PHOTO_LAYOUT_FALLBACK_GAP } from './photoLayout';
 
 const ROUTES = {
   home: '/',
   photography: '/photography',
+};
+
+const PHOTO_SORT_ORDERS = {
+  newest: 'newest',
+  oldest: 'oldest',
 };
 
 const EXIF_FIELD_ORDER = [
@@ -46,6 +52,105 @@ function getNextPhotoIndex(currentIndex, photosCount, delta) {
   return (currentIndex + delta + photosCount) % photosCount;
 }
 
+function getPhotoCapturedAt(photo) {
+  return photo.exif?.capturedAt || '';
+}
+
+function sortPhotosForDisplay(entries, sortOrder) {
+  return [...entries].sort((left, right) => {
+    const leftCapturedAt = getPhotoCapturedAt(left.photo);
+    const rightCapturedAt = getPhotoCapturedAt(right.photo);
+
+    if (leftCapturedAt && rightCapturedAt && leftCapturedAt !== rightCapturedAt) {
+      return sortOrder === PHOTO_SORT_ORDERS.oldest
+        ? leftCapturedAt.localeCompare(rightCapturedAt)
+        : rightCapturedAt.localeCompare(leftCapturedAt);
+    }
+
+    if (leftCapturedAt && !rightCapturedAt) {
+      return -1;
+    }
+
+    if (!leftCapturedAt && rightCapturedAt) {
+      return 1;
+    }
+
+    return left.index - right.index;
+  });
+}
+
+function parseGapValue(rawValue) {
+  const parsedValue = Number.parseFloat(rawValue);
+  return Number.isFinite(parsedValue) ? parsedValue : PHOTO_LAYOUT_FALLBACK_GAP;
+}
+
+function usePhotographyGalleryMetrics(isEnabled) {
+  const galleryRef = useRef(null);
+  const [metrics, setMetrics] = useState({
+    width: 0,
+    gap: PHOTO_LAYOUT_FALLBACK_GAP,
+  });
+
+  useLayoutEffect(() => {
+    if (!isEnabled) {
+      setMetrics((currentMetrics) => ({
+        ...currentMetrics,
+        width: 0,
+      }));
+      return undefined;
+    }
+
+    const node = galleryRef.current;
+
+    if (!node) {
+      return undefined;
+    }
+
+    const measure = (explicitWidth) => {
+      const computedStyles =
+        typeof window.getComputedStyle === 'function' ? window.getComputedStyle(node) : null;
+      const measuredGap = computedStyles
+        ? parseGapValue(computedStyles.columnGap || computedStyles.gap)
+        : PHOTO_LAYOUT_FALLBACK_GAP;
+      const fallbackWidth =
+        node.clientWidth ||
+        node.parentElement?.getBoundingClientRect().width ||
+        window.innerWidth ||
+        document.documentElement.clientWidth ||
+        0;
+      const rawWidth = explicitWidth ?? node.getBoundingClientRect().width;
+      const measuredWidth = Math.max(rawWidth || fallbackWidth, 0);
+
+      setMetrics((currentMetrics) => {
+        if (currentMetrics.width === measuredWidth && currentMetrics.gap === measuredGap) {
+          return currentMetrics;
+        }
+
+        return {
+          width: measuredWidth,
+          gap: measuredGap,
+        };
+      });
+    };
+
+    measure();
+
+    if (typeof ResizeObserver !== 'function') {
+      return undefined;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      measure(entry?.contentRect?.width);
+    });
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isEnabled]);
+
+  return [galleryRef, metrics];
+}
+
 function App() {
   const { t, i18n } = useTranslation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -53,6 +158,7 @@ function App() {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
   const [photoLibrary, setPhotoLibrary] = useState([]);
   const [isPhotosLoading, setIsPhotosLoading] = useState(true);
+  const [photoSortOrder, setPhotoSortOrder] = useState(PHOTO_SORT_ORDERS.newest);
   const dropdownRef = useRef(null);
   const closeTimerRef = useRef(null);
 
@@ -197,11 +303,14 @@ function App() {
   const projectsToShow = featuredProjects.filter((project) => project.featured).slice(0, 3);
   const photos = useMemo(
     () =>
-      photoLibrary.map((photo) => ({
+      sortPhotosForDisplay(
+        photoLibrary.map((photo, index) => ({ photo, index })),
+        photoSortOrder
+      ).map(({ photo }) => ({
         ...photo,
         localizedAlt: getLocalizedText(photo.alt, currentLang),
       })),
-    [currentLang, photoLibrary]
+    [currentLang, photoLibrary, photoSortOrder]
   );
   const selectedPhoto = selectedPhotoIndex === null ? null : photos[selectedPhotoIndex];
 
@@ -317,7 +426,9 @@ function App() {
             getAssetPath={getAssetPath}
             isPhotosLoading={isPhotosLoading}
             onPhotoSelect={setSelectedPhotoIndex}
+            onSortOrderChange={setPhotoSortOrder}
             photos={photos}
+            sortOrder={photoSortOrder}
             t={t}
           />
         ) : (
@@ -428,7 +539,27 @@ function ProfileView({ currentLang, getAssetPath, profileLinks, projectsToShow, 
   );
 }
 
-function PhotographyView({ getAssetPath, isPhotosLoading, onPhotoSelect, photos, t }) {
+function PhotographyView({
+  getAssetPath,
+  isPhotosLoading,
+  onPhotoSelect,
+  onSortOrderChange,
+  photos,
+  sortOrder,
+  t,
+}) {
+  const [galleryRef, galleryMetrics] = usePhotographyGalleryMetrics(!isPhotosLoading && photos.length > 0);
+  const photoRows = useMemo(
+    () =>
+      buildJustifiedRows(
+        photos,
+        galleryMetrics.width,
+        galleryMetrics.gap,
+        getTargetRowHeight(galleryMetrics.width)
+      ),
+    [galleryMetrics.gap, galleryMetrics.width, photos]
+  );
+
   return (
     <div className="photography-layout">
       <header className="photography-hero">
@@ -446,29 +577,65 @@ function PhotographyView({ getAssetPath, isPhotosLoading, onPhotoSelect, photos,
         <section className="photography-gallery-section" aria-labelledby="photography-gallery-title">
           <div className="photography-section-heading">
             <h2 id="photography-gallery-title">{t('photographySectionTitle')}</h2>
-            <p className="photography-count">
-              {photos.length} {t('photographyCountLabel')}
-            </p>
+            <div className="photography-gallery-meta">
+              <p className="photography-count">
+                {photos.length} {t('photographyCountLabel')}
+              </p>
+              <div className="photo-sort-controls" role="group" aria-label={t('photoSortLabel')}>
+                <button
+                  type="button"
+                  className={`photo-sort-button ${
+                    sortOrder === PHOTO_SORT_ORDERS.newest ? 'is-active' : ''
+                  }`}
+                  aria-pressed={sortOrder === PHOTO_SORT_ORDERS.newest}
+                  onClick={() => onSortOrderChange(PHOTO_SORT_ORDERS.newest)}
+                >
+                  {t('photoSortNewest')}
+                </button>
+                <button
+                  type="button"
+                  className={`photo-sort-button ${
+                    sortOrder === PHOTO_SORT_ORDERS.oldest ? 'is-active' : ''
+                  }`}
+                  aria-pressed={sortOrder === PHOTO_SORT_ORDERS.oldest}
+                  onClick={() => onSortOrderChange(PHOTO_SORT_ORDERS.oldest)}
+                >
+                  {t('photoSortOldest')}
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="photography-grid" aria-label={t('photographyGridLabel')}>
-            {photos.map((photo, index) => (
-              <button
-                key={photo.id}
-                type="button"
-                className="photo-tile"
-                onClick={() => onPhotoSelect(index)}
-                aria-label={t('photoOpenLabel', { index: index + 1 })}
+          <div className="photography-grid" aria-label={t('photographyGridLabel')} ref={galleryRef}>
+            {photoRows.map((row, rowIndex) => (
+              <div
+                key={`${row.items[0].photo.id}-${row.items[row.items.length - 1].photo.id}-${rowIndex}`}
+                className={`photography-row ${row.isLastRow ? 'photography-row--last' : ''}`}
               >
-                <img
-                  src={getAssetPath(photo.thumbSrc)}
-                  alt={photo.localizedAlt}
-                  width={photo.width}
-                  height={photo.height}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </button>
+                {row.items.map((item) => (
+                  <button
+                    key={item.photo.id}
+                    type="button"
+                    className="photo-tile"
+                    onClick={() => onPhotoSelect(item.originalIndex)}
+                    aria-label={t('photoOpenLabel', { index: item.originalIndex + 1 })}
+                    style={{
+                      width: `${item.width}px`,
+                      height: `${item.height}px`,
+                      flexBasis: `${item.width}px`,
+                    }}
+                  >
+                    <img
+                      src={getAssetPath(item.photo.thumbSrc)}
+                      alt={item.photo.localizedAlt}
+                      width={item.photo.width}
+                      height={item.photo.height}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         </section>

@@ -17,7 +17,7 @@ const supportedExtensions = new Set(['.jpg', '.jpeg', '.png', '.tif', '.tiff', '
 const thumbMaxDimension = Number(process.env.PHOTO_THUMB_MAX || 960);
 const fullMaxDimension = Number(process.env.PHOTO_FULL_MAX || 2400);
 const shouldClearOnEmpty = process.env.PHOTO_CLEAR_ON_EMPTY === '1';
-const generatorVersion = '2';
+const generatorVersion = '3';
 const generatorConfigSignature = JSON.stringify({
   generatorVersion,
   thumbMaxDimension,
@@ -85,6 +85,7 @@ function main() {
       relativePath: sourceRelativePath,
       size: sourceStat.size,
       mtimeMs: Math.trunc(sourceStat.mtimeMs),
+      createdAtMs: resolveSourceCreatedAtMs(sourceStat),
     };
     const previousEntry = previousEntries.get(sourceRelativePath);
 
@@ -188,7 +189,7 @@ function generatePhotoEntry(filePath, index, slug, sourceMeta) {
   const buffer = fs.readFileSync(filePath);
   const dimensions = getImageDimensions(filePath, buffer);
   const parsedExif = readExif(buffer);
-  const createdAt = parsedExif.dateTimeOriginal || parsedExif.dateTime || '';
+  const createdAt = formatCapturedAt(parsedExif.dateTimeOriginal || parsedExif.dateTime || sourceMeta.createdAtMs);
   const variants = createDisplayAssets(filePath, slug);
   const altText = buildAltText(slug, index + 1);
   const photo = {
@@ -199,7 +200,7 @@ function generatePhotoEntry(filePath, index, slug, sourceMeta) {
     width: dimensions.width,
     height: dimensions.height,
     alt: altText,
-    exif: formatExif(parsedExif, dimensions),
+    exif: formatExif(parsedExif, dimensions, sourceMeta.createdAtMs),
     sortDate: createdAt,
     sourceName: path.basename(filePath),
   };
@@ -470,7 +471,7 @@ function buildAltText(slug, index) {
   };
 }
 
-function formatExif(parsedExif, dimensions) {
+function formatExif(parsedExif, dimensions, fallbackCapturedAt) {
   const location = formatLocation(parsedExif.latitude, parsedExif.longitude);
 
   return {
@@ -480,13 +481,25 @@ function formatExif(parsedExif, dimensions) {
     aperture: formatAperture(parsedExif.fNumber),
     shutterSpeed: formatShutterSpeed(parsedExif.exposureTime),
     iso: parsedExif.iso ? String(parsedExif.iso) : '',
-    capturedAt: formatCapturedAt(parsedExif.dateTimeOriginal || parsedExif.dateTime),
+    capturedAt: formatCapturedAt(parsedExif.dateTimeOriginal || parsedExif.dateTime || fallbackCapturedAt),
     dimensions:
       Number.isFinite(dimensions.width) && Number.isFinite(dimensions.height)
         ? `${dimensions.width} × ${dimensions.height}`
         : '',
     location,
   };
+}
+
+function resolveSourceCreatedAtMs(sourceStat) {
+  if (Number.isFinite(sourceStat.birthtimeMs) && sourceStat.birthtimeMs > 0) {
+    return sourceStat.birthtimeMs;
+  }
+
+  if (Number.isFinite(sourceStat.mtimeMs) && sourceStat.mtimeMs > 0) {
+    return sourceStat.mtimeMs;
+  }
+
+  return 0;
 }
 
 function cleanString(value) {
@@ -647,7 +660,7 @@ function formatCapturedAt(value) {
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
     date.getHours()
-  )}:${pad(date.getMinutes())}`;
+  )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
 function formatLocation(latitude, longitude) {
@@ -944,4 +957,5 @@ if (require.main === module) {
 
 module.exports = {
   formatCameraName,
+  formatCapturedAt,
 };

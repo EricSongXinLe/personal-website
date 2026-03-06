@@ -9,7 +9,7 @@ import { afterEach, expect, test } from 'vitest';
 
 const tempDirs = [];
 const require = createRequire(import.meta.url);
-const { formatCameraName } = require('./generate-photos.js');
+const { formatCameraName, formatCapturedAt } = require('./generate-photos.js');
 
 afterEach(() => {
   while (tempDirs.length > 0) {
@@ -52,6 +52,41 @@ test('generates gallery JSON and display assets from source photos', () => {
   expect(generated[0].exif.dimensions).toMatch(/\d+\s×\s\d+/);
   expect(fs.existsSync(path.join(outputDir, 'thumbs'))).toBe(true);
   expect(fs.existsSync(path.join(outputDir, 'full'))).toBe(true);
+});
+
+test('falls back to the source file creation time when exif capture date is missing', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'photo-generator-'));
+  tempDirs.push(tempRoot);
+
+  const sourceDir = path.join(tempRoot, 'originals');
+  const outputDir = path.join(tempRoot, 'public', 'photos', 'generated');
+  const dataFile = path.join(tempRoot, 'public', 'photos', 'generated', 'photos.json');
+  const sourceFile = path.join(sourceDir, 'no-exif.png');
+
+  fs.mkdirSync(sourceDir, { recursive: true });
+  fs.copyFileSync(path.resolve(process.cwd(), 'public', 'images', 'icon_email.png'), sourceFile);
+
+  execFileSync('node', [path.resolve(process.cwd(), 'scripts', 'generate-photos.js')], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      PHOTO_SOURCE_DIR: sourceDir,
+      PHOTO_OUTPUT_DIR: outputDir,
+      PHOTO_DATA_FILE: dataFile,
+    },
+    stdio: 'ignore',
+  });
+
+  const generated = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+  const sourceStat = fs.statSync(sourceFile);
+  const expectedCapturedAt = formatCapturedAt(
+    Number.isFinite(sourceStat.birthtimeMs) && sourceStat.birthtimeMs > 0
+      ? sourceStat.birthtimeMs
+      : sourceStat.mtimeMs
+  );
+
+  expect(generated).toHaveLength(1);
+  expect(generated[0].exif.capturedAt).toBe(expectedCapturedAt);
 });
 
 test('normalizes camera model names into readable labels', () => {
