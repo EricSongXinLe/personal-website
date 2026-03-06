@@ -9,6 +9,7 @@ const outputDir = resolvePath(
   path.join(projectRoot, 'public', 'photos', 'generated')
 );
 const dataFile = resolvePath(process.env.PHOTO_DATA_FILE, path.join(outputDir, 'photos.json'));
+const cacheFile = path.join(outputDir, '.cache.json');
 
 const thumbDir = path.join(outputDir, 'thumbs');
 const fullDir = path.join(outputDir, 'full');
@@ -16,6 +17,12 @@ const supportedExtensions = new Set(['.jpg', '.jpeg', '.png', '.tif', '.tiff', '
 const thumbMaxDimension = Number(process.env.PHOTO_THUMB_MAX || 960);
 const fullMaxDimension = Number(process.env.PHOTO_FULL_MAX || 2400);
 const shouldClearOnEmpty = process.env.PHOTO_CLEAR_ON_EMPTY === '1';
+const generatorVersion = '2';
+const generatorConfigSignature = JSON.stringify({
+  generatorVersion,
+  thumbMaxDimension,
+  fullMaxDimension,
+});
 const cameraModelAliases = new Map([
   ['NIKON Z 7_2', 'Nikon Z7II'],
   ['DJI FC3582', 'DJI Mini 3 Pro'],
@@ -31,6 +38,7 @@ function resolvePath(customPath, fallbackPath) {
 
 function main() {
   const files = collectSourceFiles(sourceDir);
+  const previousCache = loadCache();
 
   if (!fs.existsSync(sourceDir)) {
     if (fs.existsSync(dataFile)) {
@@ -57,21 +65,51 @@ function main() {
 
     resetOutputDirectories();
     writeDataFile([]);
+    writeCache([]);
     console.log(
       `No supported photo files found in "${path.relative(projectRoot, sourceDir)}"; cleared generated gallery.`
     );
     return;
   }
 
-  resetOutputDirectories();
+  ensureOutputDirectories();
 
   const slugCounts = new Map();
-  const photos = files
-    .map((filePath, index) => generatePhotoEntry(filePath, index, slugCounts))
-    .sort(sortPhotos);
+  const previousEntries = new Map(previousCache.entries.map((entry) => [entry.sourceRelativePath, entry]));
+  const nextEntries = files.map((filePath, index) => {
+    const sourceRelativePath = path.relative(sourceDir, filePath);
+    const fileName = path.basename(filePath, path.extname(filePath));
+    const slug = uniqueSlug(slugify(fileName), slugCounts);
+    const sourceStat = fs.statSync(filePath);
+    const sourceMeta = {
+      relativePath: sourceRelativePath,
+      size: sourceStat.size,
+      mtimeMs: Math.trunc(sourceStat.mtimeMs),
+    };
+    const previousEntry = previousEntries.get(sourceRelativePath);
+
+    if (canReuseEntry(previousEntry, sourceMeta, slug, previousCache.configSignature)) {
+      return previousEntry;
+    }
+
+    return generatePhotoEntry(filePath, index, slug, sourceMeta);
+  });
+
+  const photos = nextEntries.map((entry) => entry.photo).sort(sortPhotos);
+  const staleAssetsRemoved = removeStaleGeneratedAssets(nextEntries);
+  const generationCount = nextEntries.filter((entry) => !entry.reused).length;
+  const hasManifestChanged = hasManifestChangedFromCache(previousCache.entries, nextEntries);
+
+  if (generationCount === 0 && staleAssetsRemoved === 0 && !hasManifestChanged && previousCache.entries.length > 0) {
+    console.log(`No photo changes detected; kept ${nextEntries.length} generated entr${nextEntries.length === 1 ? 'y' : 'ies'}.`);
+    return;
+  }
 
   writeDataFile(photos);
-  console.log(`Generated ${photos.length} photo entr${photos.length === 1 ? 'y' : 'ies'}.`);
+  writeCache(nextEntries);
+  console.log(
+    `Updated ${nextEntries.length} photo entr${nextEntries.length === 1 ? 'y' : 'ies'} (${generationCount} regenerated, ${staleAssetsRemoved} stale assets removed).`
+  );
 }
 
 function collectSourceFiles(directory) {
@@ -137,22 +175,23 @@ function hasGeneratedAssets() {
 
 function resetOutputDirectories() {
   fs.rmSync(outputDir, { recursive: true, force: true });
+  ensureOutputDirectories();
+}
+
+function ensureOutputDirectories() {
   fs.mkdirSync(thumbDir, { recursive: true });
   fs.mkdirSync(fullDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, '.gitkeep'), '', 'utf8');
 }
 
-function generatePhotoEntry(filePath, index, slugCounts) {
-  const fileName = path.basename(filePath, path.extname(filePath));
-  const slug = uniqueSlug(slugify(fileName), slugCounts);
+function generatePhotoEntry(filePath, index, slug, sourceMeta) {
   const buffer = fs.readFileSync(filePath);
   const dimensions = getImageDimensions(filePath, buffer);
   const parsedExif = readExif(buffer);
   const createdAt = parsedExif.dateTimeOriginal || parsedExif.dateTime || '';
   const variants = createDisplayAssets(filePath, slug);
   const altText = buildAltText(slug, index + 1);
-
-  return {
+  const photo = {
     id: slug,
     slug,
     thumbSrc: variants.thumbSrc,
@@ -164,6 +203,8 @@ function generatePhotoEntry(filePath, index, slugCounts) {
     sortDate: createdAt,
     sourceName: path.basename(filePath),
   };
+
+  return createCacheEntry(photo, sourceMeta, false);
 }
 
 function uniqueSlug(baseSlug, slugCounts) {
@@ -237,6 +278,159 @@ function writeDataFile(photos) {
   const normalizedPhotos = photos.map(({ sortDate, sourceName, ...photo }) => photo);
   fs.mkdirSync(path.dirname(dataFile), { recursive: true });
   fs.writeFileSync(dataFile, `${JSON.stringify(normalizedPhotos, null, 2)}\n`, 'utf8');
+}
+
+function writeCache(entries) {
+  fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
+  fs.writeFileSync(
+    cacheFile,
+    `${JSON.stringify(
+      {
+        configSignature: generatorConfigSignature,
+        entries: entries.map((entry) => ({
+          sourceRelativePath: entry.sourceRelativePath,
+          sourceSize: entry.sourceSize,
+          sourceMtimeMs: entry.sourceMtimeMs,
+          slug: entry.slug,
+          photo: entry.photo,
+        })),
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
+}
+
+function loadCache() {
+  if (!fs.existsSync(cacheFile)) {
+    return { configSignature: '', entries: [] };
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+    const entries = Array.isArray(parsed.entries)
+      ? parsed.entries
+          .filter((entry) => entry && entry.sourceRelativePath && entry.photo)
+          .map((entry) => ({
+            sourceRelativePath: entry.sourceRelativePath,
+            sourceSize: entry.sourceSize,
+            sourceMtimeMs: entry.sourceMtimeMs,
+            slug: entry.slug,
+            photo: entry.photo,
+            reused: true,
+          }))
+      : [];
+
+    return {
+      configSignature: parsed.configSignature || '',
+      entries,
+    };
+  } catch (error) {
+    return { configSignature: '', entries: [] };
+  }
+}
+
+function createCacheEntry(photo, sourceMeta, reused) {
+  return {
+    sourceRelativePath: sourceMeta.relativePath,
+    sourceSize: sourceMeta.size,
+    sourceMtimeMs: sourceMeta.mtimeMs,
+    slug: photo.slug,
+    photo,
+    reused,
+  };
+}
+
+function canReuseEntry(previousEntry, sourceMeta, slug, previousConfigSignature) {
+  if (!previousEntry) {
+    return false;
+  }
+
+  if (previousConfigSignature !== generatorConfigSignature) {
+    return false;
+  }
+
+  if (previousEntry.slug !== slug) {
+    return false;
+  }
+
+  if (previousEntry.sourceSize !== sourceMeta.size || previousEntry.sourceMtimeMs !== sourceMeta.mtimeMs) {
+    return false;
+  }
+
+  if (!assetsExistForPhoto(previousEntry.photo)) {
+    return false;
+  }
+
+  return true;
+}
+
+function assetsExistForPhoto(photo) {
+  return (
+    photo &&
+    fs.existsSync(resolveGeneratedAssetPath(photo.thumbSrc)) &&
+    fs.existsSync(resolveGeneratedAssetPath(photo.fullSrc))
+  );
+}
+
+function resolveGeneratedAssetPath(assetSrc) {
+  return path.join(outputDir, assetSrc.replace('/photos/generated/', ''));
+}
+
+function removeStaleGeneratedAssets(entries) {
+  const expectedPaths = new Set(entries.flatMap((entry) => [entry.photo.thumbSrc, entry.photo.fullSrc]).map(resolveGeneratedAssetPath));
+  const generatedFiles = listGeneratedAssetFiles();
+  let removedCount = 0;
+
+  for (const filePath of generatedFiles) {
+    if (!expectedPaths.has(filePath)) {
+      fs.rmSync(filePath, { force: true });
+      removedCount += 1;
+    }
+  }
+
+  return removedCount;
+}
+
+function listGeneratedAssetFiles() {
+  const assetDirs = [thumbDir, fullDir];
+  const filePaths = [];
+
+  for (const directory of assetDirs) {
+    if (!fs.existsSync(directory)) {
+      continue;
+    }
+
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      if (entry.isFile()) {
+        filePaths.push(path.join(directory, entry.name));
+      }
+    }
+  }
+
+  return filePaths;
+}
+
+function hasManifestChangedFromCache(previousEntries, nextEntries) {
+  if (previousEntries.length !== nextEntries.length) {
+    return true;
+  }
+
+  for (let index = 0; index < nextEntries.length; index += 1) {
+    const previous = previousEntries[index];
+    const next = nextEntries[index];
+
+    if (!previous || !next) {
+      return true;
+    }
+
+    if (JSON.stringify(previous.photo) !== JSON.stringify(next.photo)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function sortPhotos(left, right) {

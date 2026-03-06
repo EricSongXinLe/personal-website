@@ -96,3 +96,91 @@ test('keeps an existing generated gallery when the source directory is empty', (
   expect(fs.existsSync(path.join(outputDir, 'thumbs', 'existing.jpg'))).toBe(true);
   expect(fs.existsSync(path.join(outputDir, 'full', 'existing.jpg'))).toBe(true);
 });
+
+test('skips regeneration when source files have not changed', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'photo-generator-'));
+  tempDirs.push(tempRoot);
+
+  const sourceDir = path.join(tempRoot, 'originals');
+  const outputDir = path.join(tempRoot, 'public', 'photos', 'generated');
+  const dataFile = path.join(outputDir, 'photos.json');
+
+  fs.mkdirSync(sourceDir, { recursive: true });
+  fs.copyFileSync(
+    path.resolve(process.cwd(), 'public', 'images', 'headshot.jpg'),
+    path.join(sourceDir, 'test-frame.jpg')
+  );
+
+  const runGenerator = () =>
+    execFileSync('node', [path.resolve(process.cwd(), 'scripts', 'generate-photos.js')], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        PHOTO_SOURCE_DIR: sourceDir,
+        PHOTO_OUTPUT_DIR: outputDir,
+        PHOTO_DATA_FILE: dataFile,
+      },
+      encoding: 'utf8',
+    });
+
+  runGenerator();
+
+  const thumbPath = path.join(outputDir, 'thumbs', 'test-frame.jpg');
+  const fullPath = path.join(outputDir, 'full', 'test-frame.jpg');
+  const cachePath = path.join(outputDir, '.cache.json');
+  const initialThumbMtime = fs.statSync(thumbPath).mtimeMs;
+  const initialFullMtime = fs.statSync(fullPath).mtimeMs;
+  const initialDataMtime = fs.statSync(dataFile).mtimeMs;
+  const initialCacheMtime = fs.statSync(cachePath).mtimeMs;
+
+  const secondRunOutput = runGenerator();
+
+  expect(secondRunOutput).toMatch(/No photo changes detected/i);
+  expect(fs.statSync(thumbPath).mtimeMs).toBe(initialThumbMtime);
+  expect(fs.statSync(fullPath).mtimeMs).toBe(initialFullMtime);
+  expect(fs.statSync(dataFile).mtimeMs).toBe(initialDataMtime);
+  expect(fs.statSync(cachePath).mtimeMs).toBe(initialCacheMtime);
+});
+
+test('removes stale generated assets when a source photo is deleted', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'photo-generator-'));
+  tempDirs.push(tempRoot);
+
+  const sourceDir = path.join(tempRoot, 'originals');
+  const outputDir = path.join(tempRoot, 'public', 'photos', 'generated');
+  const dataFile = path.join(outputDir, 'photos.json');
+
+  fs.mkdirSync(sourceDir, { recursive: true });
+  fs.copyFileSync(
+    path.resolve(process.cwd(), 'public', 'images', 'headshot.jpg'),
+    path.join(sourceDir, 'first-frame.jpg')
+  );
+  fs.copyFileSync(
+    path.resolve(process.cwd(), 'public', 'images', 'headshot.jpg'),
+    path.join(sourceDir, 'second-frame.jpg')
+  );
+
+  const runGenerator = () =>
+    execFileSync('node', [path.resolve(process.cwd(), 'scripts', 'generate-photos.js')], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        PHOTO_SOURCE_DIR: sourceDir,
+        PHOTO_OUTPUT_DIR: outputDir,
+        PHOTO_DATA_FILE: dataFile,
+      },
+      encoding: 'utf8',
+    });
+
+  runGenerator();
+
+  fs.rmSync(path.join(sourceDir, 'second-frame.jpg'));
+  const secondRunOutput = runGenerator();
+  const generated = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+
+  expect(secondRunOutput).toMatch(/stale assets removed/i);
+  expect(generated).toHaveLength(1);
+  expect(generated[0].slug).toBe('first-frame');
+  expect(fs.existsSync(path.join(outputDir, 'thumbs', 'second-frame.jpg'))).toBe(false);
+  expect(fs.existsSync(path.join(outputDir, 'full', 'second-frame.jpg'))).toBe(false);
+});
