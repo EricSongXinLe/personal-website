@@ -8,16 +8,14 @@ const outputDir = resolvePath(
   process.env.PHOTO_OUTPUT_DIR,
   path.join(projectRoot, 'public', 'photos', 'generated')
 );
-const dataFile = resolvePath(
-  process.env.PHOTO_DATA_FILE,
-  path.join(projectRoot, 'src', 'data', 'photos.generated.json')
-);
+const dataFile = resolvePath(process.env.PHOTO_DATA_FILE, path.join(outputDir, 'photos.json'));
 
 const thumbDir = path.join(outputDir, 'thumbs');
 const fullDir = path.join(outputDir, 'full');
 const supportedExtensions = new Set(['.jpg', '.jpeg', '.png', '.tif', '.tiff', '.heic', '.heif']);
 const thumbMaxDimension = Number(process.env.PHOTO_THUMB_MAX || 960);
 const fullMaxDimension = Number(process.env.PHOTO_FULL_MAX || 2400);
+const shouldClearOnEmpty = process.env.PHOTO_CLEAR_ON_EMPTY === '1';
 const cameraModelAliases = new Map([
   ['NIKON Z 7_2', 'Nikon Z7II'],
   ['DJI FC3582', 'DJI Mini 3 Pro'],
@@ -50,6 +48,13 @@ function main() {
   }
 
   if (files.length === 0) {
+    if (!shouldClearOnEmpty && hasExistingGeneratedGallery()) {
+      console.warn(
+        `No supported photo files found in "${path.relative(projectRoot, sourceDir)}"; keeping existing generated gallery.`
+      );
+      return;
+    }
+
     resetOutputDirectories();
     writeDataFile([]);
     console.log(
@@ -79,6 +84,55 @@ function collectSourceFiles(directory) {
     .filter((entry) => entry.isFile() && supportedExtensions.has(path.extname(entry.name).toLowerCase()))
     .map((entry) => path.join(directory, entry.name))
     .sort((left, right) => left.localeCompare(right));
+}
+
+function hasExistingGeneratedGallery() {
+  if (hasExistingGeneratedData()) {
+    return true;
+  }
+
+  return hasGeneratedAssets();
+}
+
+function hasExistingGeneratedData() {
+  if (!fs.existsSync(dataFile)) {
+    return false;
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+    return Array.isArray(parsed) && parsed.length > 0;
+  } catch (error) {
+    return false;
+  }
+}
+
+function hasGeneratedAssets() {
+  if (!fs.existsSync(outputDir)) {
+    return false;
+  }
+
+  const stack = [outputDir];
+
+  while (stack.length > 0) {
+    const currentDir = stack.pop();
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const entryPath = path.join(currentDir, entry.name);
+
+      if (entry.isDirectory()) {
+        stack.push(entryPath);
+        continue;
+      }
+
+      if (entry.name !== '.gitkeep') {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 function resetOutputDirectories() {

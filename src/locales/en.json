@@ -16,6 +16,8 @@
   "photographySectionTitle": "Selected Work",
   "photographyCountLabel": "works",
   "photographyGridLabel": "Photography gallery",
+  "photographyLoadingTitle": "Loading photographs",
+  "photographyLoadingBody": "Reading the generated gallery manifest and preparing the layout.",
   "photographyEmptyTitle": "No photographs generated yet",
   "photographyEmptyBody": "Add source photos, generate the gallery data, and the magazine-style layout will appear here.",
   "photographyEmptyDivider": "then run",

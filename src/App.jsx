@@ -3,7 +3,6 @@ import './App.css';
 import { useTranslation } from 'react-i18next';
 import './i18n';
 import { featuredProjects } from './data/featuredProjects';
-import photoLibrary from './data/photos.generated.json';
 
 const ROUTES = {
   home: '/',
@@ -52,6 +51,8 @@ function App() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [route, setRoute] = useState(() => getRouteFromHash(window.location.hash));
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
+  const [photoLibrary, setPhotoLibrary] = useState([]);
+  const [isPhotosLoading, setIsPhotosLoading] = useState(true);
   const dropdownRef = useRef(null);
   const closeTimerRef = useRef(null);
 
@@ -127,7 +128,7 @@ function App() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedPhotoIndex]);
+  }, [selectedPhotoIndex, photoLibrary.length]);
 
   const handleMouseEnter = () => {
     if (closeTimerRef.current) {
@@ -159,6 +160,40 @@ function App() {
   const getAssetPath = (assetPath) => `${normalizedBase}${assetPath.replace(/^\//, '')}`;
   const getRouteHref = (path) => `${normalizedBase}#${path}`;
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadPhotoLibrary() {
+      setIsPhotosLoading(true);
+
+      try {
+        const response = await fetch(getAssetPath('photos/generated/photos.json'), {
+          signal: controller.signal,
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load photography manifest (${response.status})`);
+        }
+
+        const payload = await response.json();
+        setPhotoLibrary(Array.isArray(payload) ? payload : []);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setPhotoLibrary([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsPhotosLoading(false);
+        }
+      }
+    }
+
+    loadPhotoLibrary();
+
+    return () => controller.abort();
+  }, [normalizedBase]);
+
   const projectsToShow = featuredProjects.filter((project) => project.featured).slice(0, 3);
   const photos = useMemo(
     () =>
@@ -166,7 +201,7 @@ function App() {
         ...photo,
         localizedAlt: getLocalizedText(photo.alt, currentLang),
       })),
-    [currentLang]
+    [currentLang, photoLibrary]
   );
   const selectedPhoto = selectedPhotoIndex === null ? null : photos[selectedPhotoIndex];
 
@@ -280,6 +315,7 @@ function App() {
           <PhotographyView
             currentLang={currentLang}
             getAssetPath={getAssetPath}
+            isPhotosLoading={isPhotosLoading}
             onPhotoSelect={setSelectedPhotoIndex}
             photos={photos}
             t={t}
@@ -395,7 +431,7 @@ function ProfileView({ currentLang, getAssetPath, profileLinks, projectsToShow, 
   );
 }
 
-function PhotographyView({ getAssetPath, onPhotoSelect, photos, t }) {
+function PhotographyView({ getAssetPath, isPhotosLoading, onPhotoSelect, photos, t }) {
   return (
     <div className="photography-layout">
       <header className="photography-hero">
@@ -404,7 +440,12 @@ function PhotographyView({ getAssetPath, onPhotoSelect, photos, t }) {
         <p className="subtitle">{t('photographySubtitle')}</p>
       </header>
 
-      {photos.length > 0 ? (
+      {isPhotosLoading ? (
+        <section className="photo-empty-state" aria-live="polite">
+          <h2>{t('photographyLoadingTitle')}</h2>
+          <p>{t('photographyLoadingBody')}</p>
+        </section>
+      ) : photos.length > 0 ? (
         <section className="photography-gallery-section" aria-labelledby="photography-gallery-title">
           <div className="photography-section-heading">
             <h2 id="photography-gallery-title">{t('photographySectionTitle')}</h2>

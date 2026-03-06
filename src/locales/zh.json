@@ -16,6 +16,8 @@
   "photographySectionTitle": "作品",
   "photographyCountLabel": "张作品",
   "photographyGridLabel": "摄影作品画廊",
+  "photographyLoadingTitle": "正在加载摄影作品",
+  "photographyLoadingBody": "正在读取生成后的画廊数据并准备布局。",
   "photographyEmptyTitle": "还没有生成摄影作品",
   "photographyEmptyBody": "把原始照片放入素材目录并生成画廊数据后，这里会显示杂志式排布的作品墙。",
   "photographyEmptyDivider": "然后执行",

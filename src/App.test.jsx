@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeEach, expect, test } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import App from './App';
 import i18n from './i18n';
 
@@ -12,6 +12,12 @@ beforeEach(() => {
   i18n.changeLanguage('en');
   window.location.hash = '#/';
   window.scrollTo = () => {};
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => [],
+  });
+  global.fetch = fetchMock;
+  window.fetch = fetchMock;
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -25,10 +31,11 @@ afterEach(() => {
   container = null;
   root = null;
   window.location.hash = '#/';
+  vi.restoreAllMocks();
 });
 
-test('renders the main profile content', () => {
-  act(() => {
+test('renders the main profile content', async () => {
+  await act(async () => {
     root.render(<App />);
   });
 
@@ -53,8 +60,8 @@ test('renders the main profile content', () => {
   expect(photographyNav && photographyNav.textContent).toMatch(/photography/i);
 });
 
-test('changes language through the language menu', () => {
-  act(() => {
+test('changes language through the language menu', async () => {
+  await act(async () => {
     root.render(<App />);
   });
 

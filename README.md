@@ -26,13 +26,18 @@ The generator will:
 
 - extract available EXIF metadata from JPEG/TIFF source files (best effort)
 - create display assets in `public/photos/generated/`
-- write the front-end data file to `src/data/photos.generated.json`
+- write the gallery manifest to `public/photos/generated/photos.json`
 
 Notes:
 
 - `photos/originals/` is gitignored so you can keep original files local.
-- If `photos/originals/` is missing, the generator keeps the last committed gallery output instead of clearing it.
+- `public/photos/generated/` and `photos.json` should stay out of git; they are deployment artifacts.
+- If `photos/originals/` is missing or empty, the generator keeps any existing generated gallery output instead of clearing it.
 - On macOS, `sips` is used to create resized JPEG variants. On other systems, the script falls back to copying the original files when image transformation tools are unavailable.
+
+## Deployment
+
+For photography-enabled deployments, build locally and upload `build/` to the server. Do not commit generated photo assets to git history.
 
 ## Build and Preview
 
