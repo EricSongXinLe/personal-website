@@ -357,19 +357,16 @@ function ProfileView({ currentLang, getAssetPath, profileLinks, projectsToShow, 
       </header>
 
       <section className="profile" aria-label={t('headshotAlt')}>
-        <picture>
-          <source srcSet={getAssetPath('images/headshot.webp')} type="image/webp" />
-          <img
-            className="headshot"
-            src={getAssetPath('images/headshot.jpg')}
-            alt={t('headshotAlt')}
-            width="250"
-            height="250"
-            loading="eager"
-            fetchPriority="high"
-            decoding="async"
-          />
-        </picture>
+        <img
+          className="headshot"
+          src={getAssetPath('images/headshot.jpg')}
+          alt={t('headshotAlt')}
+          width="250"
+          height="250"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+        />
       </section>
 
       <section className="about" aria-labelledby="about-title">
