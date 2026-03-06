@@ -28,6 +28,8 @@
   "photoNextLabel": "查看下一张作品",
   "photoPreviousButton": "上一张",
   "photoNextButton": "下一张",
+  "photoShowDetailsButton": "查看 EXIF",
+  "photoHideDetailsButton": "收起 EXIF",
   "photoExifTitle": "EXIF 信息",
   "photoExifUnavailable": "这张图片没有可用的 EXIF 信息。",
   "photoExifCamera": "相机",

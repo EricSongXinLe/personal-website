@@ -491,11 +491,16 @@ function PhotographyView({ getAssetPath, isPhotosLoading, onPhotoSelect, photos,
 }
 
 function PhotoLightbox({ currentIndex, getAssetPath, onClose, onNext, onPrevious, photo, photosCount, t }) {
+  const [isMobileExifOpen, setIsMobileExifOpen] = useState(false);
   const exifItems = EXIF_FIELD_ORDER.map((field) => ({
     key: field.key,
     label: t(field.labelKey),
     value: photo.exif?.[field.key],
   })).filter((field) => field.value);
+
+  useEffect(() => {
+    setIsMobileExifOpen(false);
+  }, [photo.id]);
 
   return (
     <div className="lightbox" role="dialog" aria-modal="true" aria-label={t('photoLightboxLabel')}>
@@ -518,6 +523,7 @@ function PhotoLightbox({ currentIndex, getAssetPath, onClose, onNext, onPrevious
           </button>
 
           <img
+            key={photo.id}
             className="lightbox-image"
             src={getAssetPath(photo.fullSrc)}
             alt={photo.localizedAlt}
@@ -529,6 +535,16 @@ function PhotoLightbox({ currentIndex, getAssetPath, onClose, onNext, onPrevious
 
           <button
             type="button"
+            className="lightbox-mobile-toggle"
+            onClick={() => setIsMobileExifOpen((open) => !open)}
+            aria-expanded={isMobileExifOpen}
+            aria-controls="lightbox-sidebar"
+          >
+            {isMobileExifOpen ? t('photoHideDetailsButton') : t('photoShowDetailsButton')}
+          </button>
+
+          <button
+            type="button"
             className="lightbox-nav lightbox-nav--next"
             onClick={onNext}
             aria-label={t('photoNextLabel')}
@@ -537,7 +553,10 @@ function PhotoLightbox({ currentIndex, getAssetPath, onClose, onNext, onPrevious
           </button>
         </div>
 
-        <aside className="lightbox-sidebar">
+        <aside
+          id="lightbox-sidebar"
+          className={`lightbox-sidebar ${isMobileExifOpen ? 'is-open' : ''}`}
+        >
           <div className="lightbox-sidebar-header">
             <p className="lightbox-counter">
               {currentIndex + 1} / {photosCount}
@@ -566,15 +585,6 @@ function PhotoLightbox({ currentIndex, getAssetPath, onClose, onNext, onPrevious
           ) : (
             <p className="exif-empty">{t('photoExifUnavailable')}</p>
           )}
-
-          <div className="lightbox-sidebar-actions">
-            <button type="button" className="lightbox-action-button" onClick={onPrevious}>
-              {t('photoPreviousButton')}
-            </button>
-            <button type="button" className="lightbox-action-button" onClick={onNext}>
-              {t('photoNextButton')}
-            </button>
-          </div>
         </aside>
       </div>
     </div>

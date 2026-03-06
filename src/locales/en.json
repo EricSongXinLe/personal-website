@@ -28,6 +28,8 @@
   "photoNextLabel": "View next photograph",
   "photoPreviousButton": "Previous",
   "photoNextButton": "Next",
+  "photoShowDetailsButton": "Show EXIF",
+  "photoHideDetailsButton": "Hide EXIF",
   "photoExifTitle": "EXIF",
   "photoExifUnavailable": "No EXIF metadata was found for this image.",
   "photoExifCamera": "Camera",

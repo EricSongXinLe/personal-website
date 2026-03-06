@@ -32,9 +32,9 @@ const mockPhotos = [
     id: 'night-walk',
     slug: 'night-walk',
     thumbSrc: '/images/headshot.jpg',
-    fullSrc: '/images/headshot.jpg',
-    width: 600,
-    height: 600,
+    fullSrc: '/images/icon_camera.png',
+    width: 40,
+    height: 40,
     alt: {
       en: 'Photograph Night Walk',
       zh: '摄影作品 Night Walk',
@@ -133,6 +133,9 @@ test('supports keyboard navigation and escape to close the lightbox', async () =
     photoTiles[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
 
+  const initialImage = container.querySelector('.lightbox-image');
+  expect(initialImage && initialImage.getAttribute('src')).toContain('/images/headshot.jpg');
+
   act(() => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
   });
@@ -140,7 +143,9 @@ test('supports keyboard navigation and escape to close the lightbox', async () =
   const exifValuesAfterNext = Array.from(container.querySelectorAll('.exif-list dd')).map((node) =>
     node.textContent.trim()
   );
+  const nextImage = container.querySelector('.lightbox-image');
   expect(exifValuesAfterNext).toContain('Fujifilm X100V');
+  expect(nextImage && nextImage.getAttribute('src')).toContain('/images/icon_camera.png');
 
   act(() => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
