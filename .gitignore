@@ -33,3 +33,7 @@ yarn-error.log*
 /public/photos/generated/*
 !/public/photos/generated/.gitkeep
 /src/data/photos.generated.json
+
+# local Wheels API data
+/server/data/*.json
+/server/data/*.tmp

@@ -11,6 +11,44 @@ npm run dev
 
 Open `http://localhost:5173`.
 
+## Wheels API Workflow
+
+The Wheels page uses a small Node API so every visitor sees the same shared brunch, dinner, and boba wheels.
+
+For local development, run the API and the Vite site in two terminals:
+
+```bash
+# terminal 1
+WHEELS_ADMIN_PASSWORD=your-edit-password npm run dev:api
+
+# terminal 2
+npm run dev
+```
+
+Vite proxies `/api` to `http://localhost:8787`. The API stores local data in `server/data/wheels.json`, which is ignored by git. If `WHEELS_ADMIN_PASSWORD` is not set, public reads still work but add/edit/delete requests are rejected.
+
+Production should run the API as a long-lived Node process:
+
+```bash
+PORT=8787 \
+WHEELS_ADMIN_PASSWORD=your-production-edit-password \
+WHEELS_DATA_FILE=/var/lib/personal-website/wheels.json \
+npm run start:api
+```
+
+Example Nginx routing:
+
+```nginx
+location /api/ {
+  proxy_pass http://127.0.0.1:8787/api/;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
 ## Photography Workflow
 
 The site can generate a local photography gallery with EXIF metadata at build time.

@@ -8,7 +8,18 @@ import { buildJustifiedRows, getTargetRowHeight, PHOTO_LAYOUT_FALLBACK_GAP } fro
 const ROUTES = {
   home: '/',
   photography: '/photography',
+  wheels: '/wheels',
 };
+
+const WHEELS_API_BASE = '/api/wheels';
+const WHEELS_PASSWORD_STORAGE_KEY = 'wheelsAdminPassword';
+const WHEEL_SPIN_ANIMATION_MS = 2800;
+
+const WHEEL_TYPES = [
+  { id: 'brunch', labelKey: 'wheelsBrunchLabel' },
+  { id: 'dinner', labelKey: 'wheelsDinnerLabel' },
+  { id: 'boba', labelKey: 'wheelsBobaLabel' },
+];
 
 const PHOTO_SORT_ORDERS = {
   newest: 'newest',
@@ -29,7 +40,12 @@ const EXIF_FIELD_ORDER = [
 
 function getRouteFromHash(hash) {
   const normalizedHash = hash.replace(/^#/, '') || ROUTES.home;
-  return normalizedHash === ROUTES.photography ? ROUTES.photography : ROUTES.home;
+
+  if (Object.values(ROUTES).includes(normalizedHash)) {
+    return normalizedHash;
+  }
+
+  return ROUTES.home;
 }
 
 function getLocalizedText(value, language) {
@@ -347,12 +363,12 @@ function App() {
     },
   ];
 
+  const isWideRoute = route === ROUTES.photography || route === ROUTES.wheels;
+
   return (
-    <div className={`page-shell ${route === ROUTES.photography ? 'page-shell--photography' : ''}`}>
+    <div className={`page-shell ${isWideRoute ? 'page-shell--wide' : ''}`}>
       <main
-        className={`container ${
-          route === ROUTES.photography ? 'container--photography' : 'container--profile'
-        }`}
+        className={`container ${isWideRoute ? 'container--wide' : 'container--profile'}`}
       >
         <div className="site-toolbar">
           <nav className="site-nav" aria-label={t('siteNavigationLabel')}>
@@ -369,6 +385,13 @@ function App() {
               aria-current={route === ROUTES.photography ? 'page' : undefined}
             >
               {t('navPhotography')}
+            </a>
+            <a
+              className={`site-nav-link ${route === ROUTES.wheels ? 'is-active' : ''}`}
+              href={getRouteHref(ROUTES.wheels)}
+              aria-current={route === ROUTES.wheels ? 'page' : undefined}
+            >
+              {t('navWheels')}
             </a>
           </nav>
 
@@ -431,6 +454,8 @@ function App() {
             sortOrder={photoSortOrder}
             t={t}
           />
+        ) : route === ROUTES.wheels ? (
+          <WheelsView t={t} />
         ) : (
           <ProfileView
             currentLang={currentLang}
@@ -533,6 +558,462 @@ function ProfileView({ currentLang, getAssetPath, profileLinks, projectsToShow, 
               </div>
             </article>
           ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function getStoredWheelsPassword() {
+  try {
+    return window.sessionStorage.getItem(WHEELS_PASSWORD_STORAGE_KEY) || '';
+  } catch (error) {
+    return '';
+  }
+}
+
+function normalizeWheelsPayload(payload) {
+  const payloadWheels = Array.isArray(payload?.wheels) ? payload.wheels : [];
+
+  return WHEEL_TYPES.map((wheelType) => {
+    const wheel = payloadWheels.find((candidate) => candidate?.id === wheelType.id);
+    const items = Array.isArray(wheel?.items)
+      ? wheel.items
+          .map((item) => ({
+            id: typeof item.id === 'string' ? item.id : '',
+            label: typeof item.label === 'string' ? item.label : '',
+          }))
+          .filter((item) => item.id && item.label)
+      : [];
+
+    return {
+      id: wheelType.id,
+      items,
+    };
+  });
+}
+
+function getWheelGradient(items) {
+  if (items.length === 0) {
+    return 'linear-gradient(135deg, #f8fbff, #e7eef7)';
+  }
+
+  const colors = ['#3f658f', '#7c9a68', '#c48b57', '#8a6f9f', '#c96f78', '#547c88'];
+  const segmentSize = 100 / items.length;
+
+  return `conic-gradient(${items
+    .map((item, index) => {
+      const start = (index * segmentSize).toFixed(3);
+      const end = ((index + 1) * segmentSize).toFixed(3);
+      return `${colors[index % colors.length]} ${start}% ${end}%`;
+    })
+    .join(', ')})`;
+}
+
+function updateWheelCollection(wheels, updatedWheel) {
+  return WHEEL_TYPES.map((wheelType) => {
+    if (wheelType.id === updatedWheel.id) {
+      return {
+        id: updatedWheel.id,
+        items: Array.isArray(updatedWheel.items) ? updatedWheel.items : [],
+      };
+    }
+
+    return wheels.find((wheel) => wheel.id === wheelType.id) || { id: wheelType.id, items: [] };
+  });
+}
+
+function WheelsView({ t }) {
+  const [selectedWheelId, setSelectedWheelId] = useState(WHEEL_TYPES[0].id);
+  const [wheels, setWheels] = useState(() => normalizeWheelsPayload({ wheels: [] }));
+  const [password, setPassword] = useState(getStoredWheelsPassword);
+  const [newItemLabel, setNewItemLabel] = useState('');
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [editingLabel, setEditingLabel] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMutating, setIsMutating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [isWheelSpinning, setIsWheelSpinning] = useState(false);
+  const [spinState, setSpinState] = useState({
+    rotation: 0,
+    selectedItemId: null,
+    resultLabel: '',
+  });
+  const spinTimerRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(WHEELS_PASSWORD_STORAGE_KEY, password);
+    } catch (error) {
+      // Session storage is a convenience only; editing still works without it.
+    }
+  }, [password]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadWheels() {
+      setIsLoading(true);
+      setErrorMessage('');
+
+      try {
+        const response = await fetch(WHEELS_API_BASE, {
+          signal: controller.signal,
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load wheels (${response.status})`);
+        }
+
+        const payload = await response.json();
+        setWheels(normalizeWheelsPayload(payload));
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setErrorMessage(t('wheelsLoadError'));
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadWheels();
+
+    return () => controller.abort();
+  }, [t]);
+
+  useEffect(
+    () => () => {
+      if (spinTimerRef.current) {
+        clearTimeout(spinTimerRef.current);
+      }
+    },
+    []
+  );
+
+  const currentWheel = wheels.find((wheel) => wheel.id === selectedWheelId) || {
+    id: selectedWheelId,
+    items: [],
+  };
+  const currentWheelType = WHEEL_TYPES.find((wheelType) => wheelType.id === selectedWheelId);
+  const wheelTitle = currentWheelType ? t(currentWheelType.labelKey) : selectedWheelId;
+  const wheelItems = currentWheel.items;
+  const wheelStyle = {
+    '--wheel-rotation': `${spinState.rotation}deg`,
+    background: getWheelGradient(wheelItems),
+  };
+
+  const sendWheelMutation = async (path, options = {}) => {
+    if (!password.trim()) {
+      setErrorMessage(t('wheelsPasswordRequired'));
+      setStatusMessage('');
+      return null;
+    }
+
+    setIsMutating(true);
+    setErrorMessage('');
+    setStatusMessage('');
+
+    try {
+      const response = await fetch(`${WHEELS_API_BASE}/${selectedWheelId}${path}`, {
+        method: options.method,
+        headers: {
+          'content-type': 'application/json',
+          'x-wheels-admin-password': password,
+        },
+        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload.error || t('wheelsGenericError'));
+      }
+
+      if (payload.wheel) {
+        setWheels((currentWheels) => updateWheelCollection(currentWheels, payload.wheel));
+      }
+
+      return payload;
+    } catch (error) {
+      setErrorMessage(error.message || t('wheelsGenericError'));
+      return null;
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const handleWheelSelect = (wheelId) => {
+    if (spinTimerRef.current) {
+      clearTimeout(spinTimerRef.current);
+      spinTimerRef.current = null;
+    }
+
+    setSelectedWheelId(wheelId);
+    setEditingItemId(null);
+    setEditingLabel('');
+    setStatusMessage('');
+    setErrorMessage('');
+    setIsWheelSpinning(false);
+    setSpinState((current) => ({
+      ...current,
+      selectedItemId: null,
+      resultLabel: '',
+    }));
+  };
+
+  const handleAddItem = async (event) => {
+    event.preventDefault();
+
+    const payload = await sendWheelMutation('/items', {
+      method: 'POST',
+      body: { label: newItemLabel },
+    });
+
+    if (payload) {
+      setNewItemLabel('');
+      setStatusMessage(t('wheelsItemAdded'));
+    }
+  };
+
+  const handleEditStart = (item) => {
+    setEditingItemId(item.id);
+    setEditingLabel(item.label);
+    setStatusMessage('');
+    setErrorMessage('');
+  };
+
+  const handleEditCancel = () => {
+    setEditingItemId(null);
+    setEditingLabel('');
+  };
+
+  const handleEditSubmit = async (event, itemId) => {
+    event.preventDefault();
+
+    const payload = await sendWheelMutation(`/items/${itemId}`, {
+      method: 'PATCH',
+      body: { label: editingLabel },
+    });
+
+    if (payload) {
+      setEditingItemId(null);
+      setEditingLabel('');
+      setStatusMessage(t('wheelsItemUpdated'));
+    }
+  };
+
+  const handleDeleteItem = async (itemId) => {
+    const payload = await sendWheelMutation(`/items/${itemId}`, {
+      method: 'DELETE',
+    });
+
+    if (payload) {
+      setStatusMessage(t('wheelsItemDeleted'));
+    }
+  };
+
+  const handleSpin = () => {
+    if (wheelItems.length === 0 || isWheelSpinning) {
+      return;
+    }
+
+    const selectedIndex = Math.floor(Math.random() * wheelItems.length);
+    const selectedItem = wheelItems[selectedIndex];
+    const segmentDegrees = 360 / wheelItems.length;
+    const targetRotation = 360 - (selectedIndex * segmentDegrees + segmentDegrees / 2);
+    const extraTurns = 1800 + Math.floor(Math.random() * 3) * 360;
+
+    if (spinTimerRef.current) {
+      clearTimeout(spinTimerRef.current);
+    }
+
+    setIsWheelSpinning(true);
+    setSpinState((current) => ({
+      rotation: current.rotation + extraTurns + targetRotation - (current.rotation % 360),
+      selectedItemId: selectedItem.id,
+      resultLabel: selectedItem.label,
+    }));
+    setStatusMessage('');
+    setErrorMessage('');
+    spinTimerRef.current = setTimeout(() => {
+      setIsWheelSpinning(false);
+      spinTimerRef.current = null;
+    }, WHEEL_SPIN_ANIMATION_MS);
+  };
+
+  return (
+    <div className="wheels-layout">
+      <header className="wheels-hero">
+        <p className="eyebrow">{t('wheelsEyebrow')}</p>
+        <h1>{t('wheelsTitle')}</h1>
+        <p className="subtitle">{t('wheelsSubtitle')}</p>
+      </header>
+
+      <section className="wheels-panel" aria-labelledby="wheels-section-title">
+        <div className="wheels-section-heading">
+          <div>
+            <h2 id="wheels-section-title">{wheelTitle}</h2>
+            <p className="wheels-count">
+              {wheelItems.length} {t('wheelsItemCountLabel')}
+            </p>
+          </div>
+
+          <div className="wheel-tabs" role="tablist" aria-label={t('wheelsTabsLabel')}>
+            {WHEEL_TYPES.map((wheelType) => (
+              <button
+                key={wheelType.id}
+                type="button"
+                className={`wheel-tab ${selectedWheelId === wheelType.id ? 'is-active' : ''}`}
+                role="tab"
+                aria-selected={selectedWheelId === wheelType.id}
+                onClick={() => handleWheelSelect(wheelType.id)}
+              >
+                {t(wheelType.labelKey)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="wheels-workspace">
+          <div className="wheel-stage" aria-live="polite">
+            <div className={`wheel-pointer ${isWheelSpinning ? 'is-spinning' : ''}`} aria-hidden="true" />
+            <div className={`wheel-dial ${isWheelSpinning ? 'is-spinning' : ''}`} style={wheelStyle}>
+              {wheelItems.length === 0 ? (
+                <span className="wheel-empty-label">{t('wheelsEmptyWheelLabel')}</span>
+              ) : (
+                wheelItems.map((item, index) => {
+                  const segmentDegrees = 360 / wheelItems.length;
+                  const angle = index * segmentDegrees + segmentDegrees / 2;
+
+                  return (
+                    <span
+                      key={item.id}
+                      className={`wheel-segment-label ${
+                        spinState.selectedItemId === item.id ? 'is-selected' : ''
+                      }`}
+                      style={{
+                        '--wheel-label-angle': `${angle - 90}deg`,
+                        '--wheel-label-counter-angle': `${90 - angle}deg`,
+                      }}
+                    >
+                      <span>{item.label}</span>
+                    </span>
+                  );
+                })
+              )}
+            </div>
+            <button
+              type="button"
+              className="wheel-spin-button"
+              onClick={handleSpin}
+              disabled={wheelItems.length === 0 || isWheelSpinning}
+            >
+              {t('wheelsSpinButton')}
+            </button>
+            <p className="wheel-result">
+              {spinState.resultLabel
+                ? t('wheelsResultLabel', { item: spinState.resultLabel })
+                : t('wheelsResultPlaceholder')}
+            </p>
+          </div>
+
+          <div className="wheels-editor">
+            <label className="wheel-field">
+              <span>{t('wheelsPasswordLabel')}</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder={t('wheelsPasswordPlaceholder')}
+                autoComplete="current-password"
+              />
+            </label>
+
+            <form className="wheel-add-form" onSubmit={handleAddItem}>
+              <label className="wheel-field">
+                <span>{t('wheelsAddLabel')}</span>
+                <input
+                  type="text"
+                  value={newItemLabel}
+                  onChange={(event) => setNewItemLabel(event.target.value)}
+                  placeholder={t('wheelsAddPlaceholder')}
+                  maxLength="80"
+                />
+              </label>
+              <button type="submit" className="wheel-primary-button" disabled={isMutating}>
+                {t('wheelsAddButton')}
+              </button>
+            </form>
+
+            {errorMessage ? (
+              <p className="wheel-message wheel-message--error" role="alert">
+                {errorMessage}
+              </p>
+            ) : null}
+            {statusMessage ? (
+              <p className="wheel-message" role="status">
+                {statusMessage}
+              </p>
+            ) : null}
+
+            <div className="wheel-items" aria-label={t('wheelsItemsLabel')}>
+              {isLoading ? (
+                <p className="wheel-empty-state">{t('wheelsLoadingLabel')}</p>
+              ) : wheelItems.length === 0 ? (
+                <p className="wheel-empty-state">{t('wheelsEmptyBody')}</p>
+              ) : (
+                wheelItems.map((item) => (
+                  <article key={item.id} className="wheel-item">
+                    {editingItemId === item.id ? (
+                      <form className="wheel-edit-form" onSubmit={(event) => handleEditSubmit(event, item.id)}>
+                        <input
+                          type="text"
+                          value={editingLabel}
+                          onChange={(event) => setEditingLabel(event.target.value)}
+                          maxLength="80"
+                          aria-label={t('wheelsEditInputLabel')}
+                        />
+                        <button type="submit" className="wheel-small-button" disabled={isMutating}>
+                          {t('wheelsSaveButton')}
+                        </button>
+                        <button
+                          type="button"
+                          className="wheel-small-button wheel-small-button--quiet"
+                          onClick={handleEditCancel}
+                        >
+                          {t('wheelsCancelButton')}
+                        </button>
+                      </form>
+                    ) : (
+                      <>
+                        <span className="wheel-item-label">{item.label}</span>
+                        <div className="wheel-item-actions">
+                          <button
+                            type="button"
+                            className="wheel-small-button"
+                            onClick={() => handleEditStart(item)}
+                          >
+                            {t('wheelsEditButton')}
+                          </button>
+                          <button
+                            type="button"
+                            className="wheel-small-button wheel-small-button--danger"
+                            onClick={() => handleDeleteItem(item.id)}
+                            disabled={isMutating}
+                          >
+                            {t('wheelsDeleteButton')}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </article>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </section>
     </div>

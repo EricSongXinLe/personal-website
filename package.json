@@ -17,6 +17,9 @@
   "scripts": {
     "generate:photos": "node scripts/generate-photos.js",
     "dev": "npm run generate:photos && vite",
+    "dev:site": "npm run dev",
+    "dev:api": "node server/wheels-server.js",
+    "start:api": "node server/wheels-server.js",
     "build": "npm run generate:photos && vite build && node scripts/write-build-version.js",
     "preview": "vite preview",
     "test": "vitest run",
