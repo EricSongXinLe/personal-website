@@ -176,6 +176,8 @@ function App() {
   const [isPhotosLoading, setIsPhotosLoading] = useState(true);
   const [photoSortOrder, setPhotoSortOrder] = useState(PHOTO_SORT_ORDERS.newest);
   const dropdownRef = useRef(null);
+  const languageButtonRef = useRef(null);
+  const languageMenuRef = useRef(null);
   const closeTimerRef = useRef(null);
 
   useEffect(() => {
@@ -271,6 +273,69 @@ function App() {
     i18n.changeLanguage(lng);
     window.localStorage.setItem('preferredLanguage', lng);
     setIsDropdownOpen(false);
+    languageButtonRef.current?.focus();
+  };
+
+  const focusLanguageOption = (index) => {
+    const focusOption = () => {
+      const options = languageMenuRef.current?.querySelectorAll('[role="menuitemradio"]');
+
+      if (!options?.length) {
+        return;
+      }
+
+      const normalizedIndex = (index + options.length) % options.length;
+      options[normalizedIndex].focus();
+    };
+
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(focusOption);
+    } else {
+      window.setTimeout(focusOption, 0);
+    }
+  };
+
+  const handleLanguageButtonKeyDown = (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      setIsDropdownOpen(true);
+      focusLanguageOption(event.key === 'ArrowDown' ? 0 : -1);
+    }
+
+    if (event.key === 'Escape') {
+      setIsDropdownOpen(false);
+    }
+  };
+
+  const handleLanguageMenuKeyDown = (event) => {
+    const options = Array.from(
+      languageMenuRef.current?.querySelectorAll('[role="menuitemradio"]') || []
+    );
+    const currentIndex = options.indexOf(document.activeElement);
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setIsDropdownOpen(false);
+      languageButtonRef.current?.focus();
+      return;
+    }
+
+    if (event.key === 'Tab') {
+      setIsDropdownOpen(false);
+      return;
+    }
+
+    const targetIndex = {
+      ArrowDown: currentIndex + 1,
+      ArrowUp: currentIndex - 1,
+      Home: 0,
+      End: options.length - 1,
+    }[event.key];
+
+    if (targetIndex !== undefined) {
+      event.preventDefault();
+      focusLanguageOption(targetIndex);
+    }
   };
 
   const language = i18n.resolvedLanguage || i18n.language;
@@ -402,44 +467,52 @@ function App() {
             onMouseLeave={handleMouseLeave}
           >
             <button
+              ref={languageButtonRef}
               type="button"
               className="language-button"
               onClick={() => setIsDropdownOpen((open) => !open)}
-              aria-haspopup="true"
+              onKeyDown={handleLanguageButtonKeyDown}
+              aria-haspopup="menu"
               aria-expanded={isDropdownOpen}
+              aria-controls="language-menu"
               aria-label={t('languageLabel')}
             >
               <span aria-hidden="true">🌐</span>
               <span>{t('languageLabel')}</span>
             </button>
-            <div
-              className={`dropdown ${isDropdownOpen ? 'visible' : ''}`}
-              role="menu"
-              aria-label={t('languageLabel')}
-            >
-              <button
-                type="button"
-                role="menuitemradio"
-                aria-checked={isEnglishSelected}
-                onClick={() => changeLanguage('en')}
+            {isDropdownOpen ? (
+              <div
+                id="language-menu"
+                className="dropdown visible"
+                role="menu"
+                aria-label={t('languageLabel')}
+                ref={languageMenuRef}
+                onKeyDown={handleLanguageMenuKeyDown}
               >
-                <span className="language-check" aria-hidden="true">
-                  {isEnglishSelected ? '✓' : ''}
-                </span>
-                <span>English</span>
-              </button>
-              <button
-                type="button"
-                role="menuitemradio"
-                aria-checked={isChineseSelected}
-                onClick={() => changeLanguage('zh')}
-              >
-                <span className="language-check" aria-hidden="true">
-                  {isChineseSelected ? '✓' : ''}
-                </span>
-                <span>中文</span>
-              </button>
-            </div>
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={isEnglishSelected}
+                  onClick={() => changeLanguage('en')}
+                >
+                  <span className="language-check" aria-hidden="true">
+                    {isEnglishSelected ? '✓' : ''}
+                  </span>
+                  <span>English</span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={isChineseSelected}
+                  onClick={() => changeLanguage('zh')}
+                >
+                  <span className="language-check" aria-hidden="true">
+                    {isChineseSelected ? '✓' : ''}
+                  </span>
+                  <span>中文</span>
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -834,12 +907,16 @@ function WheelsView({ t }) {
     setSpinState((current) => ({
       rotation: current.rotation + extraTurns + targetRotation - (current.rotation % 360),
       selectedItemId: selectedItem.id,
-      resultLabel: selectedItem.label,
+      resultLabel: '',
     }));
     setStatusMessage('');
     setErrorMessage('');
     spinTimerRef.current = setTimeout(() => {
       setIsWheelSpinning(false);
+      setSpinState((current) => ({
+        ...current,
+        resultLabel: selectedItem.label,
+      }));
       spinTimerRef.current = null;
     }, WHEEL_SPIN_ANIMATION_MS);
   };
@@ -878,7 +955,7 @@ function WheelsView({ t }) {
         </div>
 
         <div className="wheels-workspace">
-          <div className="wheel-stage" aria-live="polite">
+          <div className="wheel-stage">
             <div className={`wheel-pointer ${isWheelSpinning ? 'is-spinning' : ''}`} aria-hidden="true" />
             <div className={`wheel-dial ${isWheelSpinning ? 'is-spinning' : ''}`} style={wheelStyle}>
               {wheelItems.length === 0 ? (
@@ -913,7 +990,7 @@ function WheelsView({ t }) {
             >
               {t('wheelsSpinButton')}
             </button>
-            <p className="wheel-result">
+            <p className="wheel-result" role="status" aria-live="polite" aria-atomic="true">
               {spinState.resultLabel
                 ? t('wheelsResultLabel', { item: spinState.resultLabel })
                 : t('wheelsResultPlaceholder')}
@@ -1137,6 +1214,8 @@ function PhotographyView({
 
 function PhotoLightbox({ currentIndex, getAssetPath, onClose, onNext, onPrevious, photo, photosCount, t }) {
   const [isMobileExifOpen, setIsMobileExifOpen] = useState(false);
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
   const exifItems = EXIF_FIELD_ORDER.map((field) => ({
     key: field.key,
     label: t(field.labelKey),
@@ -1147,16 +1226,101 @@ function PhotoLightbox({ currentIndex, getAssetPath, onClose, onNext, onPrevious
     setIsMobileExifOpen(false);
   }, [photo.id]);
 
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    const pageMain = document.querySelector('main');
+    const previouslyFocused = document.activeElement;
+    const mainWasInert = pageMain?.hasAttribute('inert') || false;
+    const previousAriaHidden = pageMain?.getAttribute('aria-hidden');
+
+    closeButtonRef.current?.focus();
+
+    if (pageMain) {
+      pageMain.setAttribute('inert', '');
+      pageMain.setAttribute('aria-hidden', 'true');
+    }
+
+    const trapFocus = (event) => {
+      if (event.key !== 'Tab' || !dialog) {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        dialog.querySelectorAll(
+          'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => {
+        const styles = window.getComputedStyle(element);
+        return element.tabIndex >= 0 && styles.display !== 'none' && styles.visibility !== 'hidden';
+      });
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && (document.activeElement === firstElement || !dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    dialog?.addEventListener('keydown', trapFocus);
+
+    return () => {
+      dialog?.removeEventListener('keydown', trapFocus);
+
+      if (pageMain) {
+        if (!mainWasInert) {
+          pageMain.removeAttribute('inert');
+        }
+
+        if (previousAriaHidden === null) {
+          pageMain.removeAttribute('aria-hidden');
+        } else {
+          pageMain.setAttribute('aria-hidden', previousAriaHidden);
+        }
+      }
+
+      if (previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) {
+        previouslyFocused.focus();
+      }
+    };
+  }, []);
+
   return (
-    <div className="lightbox" role="dialog" aria-modal="true" aria-label={t('photoLightboxLabel')}>
+    <div
+      className="lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('photoLightboxLabel')}
+      ref={dialogRef}
+    >
       <button
         type="button"
         className="lightbox-backdrop"
         aria-label={t('photoCloseLabel')}
         onClick={onClose}
+        tabIndex="-1"
       />
 
       <div className="lightbox-panel">
+        <button
+          ref={closeButtonRef}
+          type="button"
+          className="lightbox-close lightbox-close--floating"
+          onClick={onClose}
+          aria-label={t('photoCloseLabel')}
+        >
+          ×
+        </button>
+
         <div className="lightbox-media">
           <button
             type="button"
@@ -1206,14 +1370,6 @@ function PhotoLightbox({ currentIndex, getAssetPath, onClose, onNext, onPrevious
             <p className="lightbox-counter">
               {currentIndex + 1} / {photosCount}
             </p>
-            <button
-              type="button"
-              className="lightbox-close"
-              onClick={onClose}
-              aria-label={t('photoCloseLabel')}
-            >
-              ×
-            </button>
           </div>
 
           <h2>{t('photoExifTitle')}</h2>

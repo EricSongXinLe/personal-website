@@ -192,10 +192,13 @@ test('renders the photography route in row-major order and opens the lightbox wi
   ]);
 
   act(() => {
+    photoTiles[0].focus();
     photoTiles[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
 
   const dialog = container.querySelector('.lightbox');
+  const pageMain = container.querySelector('main');
+  const closeButton = container.querySelector('.lightbox-panel > .lightbox-close');
   const exifTitle = Array.from(container.querySelectorAll('.lightbox-sidebar h2')).find(
     (node) => node.textContent === 'EXIF'
   );
@@ -204,9 +207,28 @@ test('renders the photography route in row-major order and opens the lightbox wi
   );
 
   expect(dialog).toBeTruthy();
+  expect(closeButton).toBeTruthy();
+  expect(document.activeElement).toBe(closeButton);
+  expect(pageMain.hasAttribute('inert')).toBe(true);
+  expect(pageMain.getAttribute('aria-hidden')).toBe('true');
   expect(exifTitle).toBeTruthy();
   expect(exifValues).toContain('Canon EOS R6');
   expect(exifValues).toContain('35 mm');
+
+  act(() => {
+    closeButton.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true })
+    );
+  });
+  expect(document.activeElement).toBe(container.querySelector('.lightbox-nav--next'));
+
+  act(() => {
+    closeButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  expect(container.querySelector('.lightbox')).toBeNull();
+  expect(pageMain.hasAttribute('inert')).toBe(false);
+  expect(pageMain.hasAttribute('aria-hidden')).toBe(false);
+  expect(document.activeElement).toBe(photoTiles[0]);
 });
 
 test('supports keyboard navigation and escape to close the lightbox in displayed order', async () => {

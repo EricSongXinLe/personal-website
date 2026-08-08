@@ -141,6 +141,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   act(() => {
     root.unmount();
   });
@@ -249,11 +250,20 @@ test('spins to an existing item without mutating the wheel', async () => {
   });
   await waitForSelector('.wheel-spin-button');
 
-  await act(async () => {
+  vi.useFakeTimers();
+  act(() => {
     container.querySelector('.wheel-spin-button').dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
+  expect(container.querySelector('.wheel-dial').classList.contains('is-spinning')).toBe(true);
+  expect(container.querySelector('.wheel-result').textContent).toContain('Spin the wheel');
+  expect(container.textContent).not.toContain('Today: Tacos');
+
+  act(() => {
+    vi.advanceTimersByTime(2800);
+  });
+
+  expect(container.querySelector('.wheel-dial').classList.contains('is-spinning')).toBe(false);
   expect(container.textContent).toContain('Today: Tacos');
   expect(global.fetch.mock.calls.some(([, options = {}]) => options.method === 'DELETE')).toBe(false);
   expect(global.fetch.mock.calls.some(([, options = {}]) => options.method === 'PATCH')).toBe(false);

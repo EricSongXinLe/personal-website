@@ -67,6 +67,7 @@ test('changes language through the language menu', async () => {
 
   const languageButton = container.querySelector('.language-button');
   expect(languageButton).toBeTruthy();
+  expect(container.querySelector('.dropdown')).toBeNull();
   act(() => {
     languageButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
@@ -82,8 +83,36 @@ test('changes language through the language menu', async () => {
   const chineseSubtitle = container.querySelector('.subtitle');
   const chineseProjectsTitle = container.querySelector('#projects-title');
   const chineseProjectSummary = container.querySelector('.project-card p');
+  expect(container.querySelector('.dropdown')).toBeNull();
+  expect(document.activeElement).toBe(languageButton);
   expect(chineseHeading && chineseHeading.textContent).toMatch(/嗨，我是 Eric!/);
   expect(chineseSubtitle && chineseSubtitle.textContent).toMatch(/UCLA 计算机工程专业学生/);
   expect(chineseProjectsTitle && chineseProjectsTitle.textContent).toMatch(/精选项目/);
   expect(chineseProjectSummary && chineseProjectSummary.textContent).toMatch(/RISC-V GPU/);
+});
+
+test('supports keyboard navigation and escape in the language menu', async () => {
+  await act(async () => {
+    root.render(<App />);
+  });
+
+  const languageButton = container.querySelector('.language-button');
+  languageButton.focus();
+
+  await act(async () => {
+    languageButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  });
+
+  const menu = container.querySelector('.dropdown');
+  const menuItems = container.querySelectorAll('[role="menuitemradio"]');
+  expect(menu).toBeTruthy();
+  expect(document.activeElement).toBe(menuItems[0]);
+
+  act(() => {
+    menuItems[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  });
+
+  expect(container.querySelector('.dropdown')).toBeNull();
+  expect(document.activeElement).toBe(languageButton);
 });

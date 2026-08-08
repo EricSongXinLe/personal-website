@@ -1037,6 +1037,7 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  padding-right: calc(2.5rem + var(--space-3));
 }
 
 .lightbox-counter {
@@ -1061,6 +1062,13 @@ p {
   -webkit-appearance: none;
   font-size: 1.65rem;
   line-height: 1;
+}
+
+.lightbox-close--floating {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 5;
 }
 
 .exif-list {
@@ -1089,7 +1097,12 @@ p {
 }
 
 .site-nav-link:hover,
-.language-button:hover,
+.language-button:hover {
+  background: var(--accent-soft);
+  border-color: rgba(64, 100, 137, 0.34);
+  color: var(--text-strong);
+}
+
 .lightbox-mobile-toggle:hover,
 .lightbox-nav:hover,
 .lightbox-close:hover {
@@ -1226,9 +1239,23 @@ p {
 
   .site-nav {
     width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
-  .site-nav-link,
+  .site-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .site-nav-link {
+    flex: 1 0 auto;
+    width: auto;
+    min-width: max-content;
+    padding-inline: 0.7rem;
+    white-space: nowrap;
+  }
+
   .language-button {
     width: 100%;
   }
@@ -1363,8 +1390,9 @@ p {
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     transform: translateY(100%);
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: transform 180ms ease, opacity 180ms ease;
+    transition: transform 180ms ease, opacity 180ms ease, visibility 0s linear 180ms;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -1372,7 +1400,9 @@ p {
   .lightbox-sidebar.is-open {
     transform: translateY(0);
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
+    transition-delay: 0s;
   }
 }
 
